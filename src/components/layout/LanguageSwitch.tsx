@@ -9,6 +9,8 @@ type Props = {
   target: Locale;
   label: string;
   hint: string;
+  /** Path after the locale, e.g. "/case-studies/geoinsight"; empty on the home page. */
+  path?: string;
 };
 
 /** Share of the viewport height a section's top must pass to count as "current". */
@@ -32,9 +34,9 @@ function sectionInView(): string {
  * Plain link to the other language, so it works without JavaScript.
  * With JavaScript it carries the visitor's current section across.
  */
-export function LanguageSwitch({ target, label, hint }: Props) {
+export function LanguageSwitch({ target, label, hint, path = "" }: Props) {
   const router = useRouter();
-  const href = `/${target}`;
+  const href = `/${target}${path}`;
 
   const handleClick = (event: MouseEvent<HTMLAnchorElement>): void => {
     if (event.defaultPrevented || event.button !== 0) return;

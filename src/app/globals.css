@@ -178,7 +178,8 @@
   .link-signal {
     color: var(--color-ink);
     text-decoration-line: underline;
-    text-decoration-color: color-mix(in oklab, var(--color-signal) 55%, transparent);
+    text-decoration-color: color-mix(in oklab, var(--color-signal) 85%, transparent);
+    text-decoration-thickness: 1.5px;
     transition:
       color 160ms var(--ease-survey),
       text-decoration-color 160ms var(--ease-survey);
@@ -187,6 +188,31 @@
   .link-signal:hover {
     color: var(--color-signal-deep);
     text-decoration-color: var(--color-signal);
+  }
+}
+
+/* Hero map interaction: highlight paths stay invisible until a label is hovered or focused. */
+.map-highlight {
+  opacity: 0;
+  transition: opacity 200ms var(--ease-survey);
+}
+
+/* A role reached from the hero map: a short highlight so the eye lands on it. */
+.job-entry:target {
+  outline: 2px solid color-mix(in oklab, var(--color-signal) 45%, transparent);
+  outline-offset: 12px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .job-entry:target {
+    animation: target-fade 2.4s var(--ease-survey) 0.6s forwards;
+  }
+}
+
+@keyframes target-fade {
+  to {
+    outline-color: transparent;
   }
 }
 

@@ -20,6 +20,19 @@ function persianRichStrings(): string[] {
     ...Object.values(fa.projects.items).flatMap((p) => [p.kind, p.description, p.name ?? ""]),
     fa.projects.confidential,
     fa.contact.lead,
+    ...Object.values(fa.caseStudies.items).flatMap((c) => [
+      c.title,
+      c.kind,
+      c.intro,
+      c.confidentiality,
+      ...c.sections.flatMap((section) => [...(section.paragraphs ?? []), ...(section.bullets ?? [])]),
+    ]),
+    ...Object.entries(fa.caseStudies.items.geoinsight.diagram)
+      .filter(([key]) => key !== "title")
+      .map(([, value]) => value),
+    fa.caseStudies.items.factory.diagram.caption,
+    fa.caseStudies.items.factory.diagram.hub,
+    ...Object.values(fa.caseStudies.items.factory.diagram.modules),
   ];
 }
 
@@ -60,6 +73,18 @@ describe("bilingual content", () => {
     ];
     expect(urls.length).toBeGreaterThan(0);
     for (const url of urls) expect(new URL(url).protocol, url).toBe("https:");
+  });
+
+  test("case studies have the same structure in both languages", () => {
+    for (const id of ["geoinsight", "factory"] as const) {
+      const faSections = fa.caseStudies.items[id].sections;
+      const enSections = en.caseStudies.items[id].sections;
+      expect(faSections.length, id).toBe(enSections.length);
+      faSections.forEach((section, i) => {
+        expect(section.paragraphs?.length ?? 0, `${id} §${i}`).toBe(enSections[i].paragraphs?.length ?? 0);
+        expect(section.bullets?.length ?? 0, `${id} §${i}`).toBe(enSections[i].bullets?.length ?? 0);
+      });
+    }
   });
 
   test("about facts line up one to one", () => {

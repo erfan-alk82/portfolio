@@ -53,7 +53,11 @@ function JobEntry({ job, isLast, locale, copy }: JobEntryProps) {
   const separator = locale === "fa" ? "، " : ", ";
 
   return (
-    <li className="grid gap-x-12 gap-y-3 md:grid-cols-[11rem_minmax(0,1fr)]">
+    // id is the map's link target; :target briefly marks the entry the visitor came to.
+    <li
+      id={`job-${job.id}`}
+      className="job-entry grid gap-x-12 gap-y-3 md:grid-cols-[11rem_minmax(0,1fr)]"
+    >
       <p className="flex flex-col gap-1 pt-1 text-sm md:items-end md:text-end">
         <span data-period className="font-semibold text-contour-strong">
           {formatPeriod(locale, job.start, job.end)}

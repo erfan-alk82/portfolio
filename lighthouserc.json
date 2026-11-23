@@ -4,7 +4,7 @@
       "startServerCommand": "npm start",
       "startServerReadyPattern": "Ready",
       "url": ["http://localhost:3000/fa", "http://localhost:3000/en"],
-      "numberOfRuns": 1,
+      "numberOfRuns": 3,
       "settings": {
         "chromeFlags": "--no-sandbox --headless=new"
       }

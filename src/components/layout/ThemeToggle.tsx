@@ -11,7 +11,7 @@ import {
 } from "@/lib/theme";
 
 type Props = {
-  labels: { toNight: string; toDay: string };
+  label: string;
 };
 
 const DARK_QUERY = "(prefers-color-scheme: dark)";
@@ -35,25 +35,38 @@ function currentTheme(): Theme {
   );
 }
 
+/** A choice made in another open tab applies here too. */
+function syncFromOtherTab(event: StorageEvent): void {
+  if (event.key !== THEME_STORAGE_KEY) return;
+  const theme = readStoredTheme(event.newValue);
+  if (theme) document.documentElement.dataset.theme = theme;
+  else delete document.documentElement.dataset.theme;
+}
+
 function subscribe(onChange: () => void): () => void {
   const media = window.matchMedia(DARK_QUERY);
+  const onStorage = (event: StorageEvent): void => {
+    syncFromOtherTab(event);
+    onChange();
+  };
   media.addEventListener("change", onChange);
   window.addEventListener(CHANGE_EVENT, onChange);
+  window.addEventListener("storage", onStorage);
   return () => {
     media.removeEventListener("change", onChange);
     window.removeEventListener(CHANGE_EVENT, onChange);
+    window.removeEventListener("storage", onStorage);
   };
 }
 
 /** Day map ↔ Night map. The choice is remembered on this device; without one the system decides. */
-export function ThemeToggle({ labels }: Props) {
+export function ThemeToggle({ label }: Props) {
   // The server cannot know the visitor's theme; "light" is only used until hydration.
   const theme = useSyncExternalStore(
     subscribe,
     currentTheme,
     () => "light" as Theme,
   );
-  const label = theme === "dark" ? labels.toDay : labels.toNight;
 
   const handleClick = (): void => {
     const next = nextTheme(currentTheme());
@@ -71,6 +84,7 @@ export function ThemeToggle({ labels }: Props) {
       type="button"
       onClick={handleClick}
       aria-label={label}
+      aria-pressed={theme === "dark"}
       title={label}
       data-testid="theme-toggle"
       className="inline-flex size-11 items-center justify-center rounded-sm border border-ink/25 text-ink transition-colors duration-150 hover:border-signal hover:text-signal-deep"

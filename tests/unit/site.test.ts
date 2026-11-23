@@ -33,6 +33,14 @@ describe("resolveSiteUrl", () => {
 });
 
 describe("languageAlternates", () => {
+  test("appends a sub-path to every alternate", () => {
+    expect(languageAlternates(new URL("https://erfan.dev"), "/case-studies/geoinsight")).toEqual({
+      fa: "https://erfan.dev/fa/case-studies/geoinsight",
+      en: "https://erfan.dev/en/case-studies/geoinsight",
+      "x-default": "https://erfan.dev/fa/case-studies/geoinsight",
+    });
+  });
+
   test("lists every locale and points x-default at the default locale", () => {
     expect(languageAlternates(new URL("https://erfan.dev"))).toEqual({
       fa: "https://erfan.dev/fa",

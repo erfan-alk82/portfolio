@@ -12,6 +12,7 @@ export type JobId = "sisootech" | "dinamotor" | "pantrylab" | "nadinsoft" | "uni
 export type ProjectId = "geoinsight" | "pantrylab" | "factory" | "samin" | "csharp-framework";
 export type Employment = "full-time" | "part-time";
 export type ProjectLinkKind = "website" | "appStore" | "googlePlay";
+export type CaseStudyId = "geoinsight" | "factory";
 export type SpokenLanguage = "fa" | "en";
 export type LanguageLevel = "native" | "intermediate";
 
@@ -83,11 +84,68 @@ export interface SkillGroupCopy {
   items: readonly Rich[];
 }
 
+export interface CaseStudyFacts {
+  id: CaseStudyId;
+  /** URL segment under /[locale]/case-studies/. */
+  slug: string;
+  projectId: ProjectId;
+  jobId: JobId;
+}
+
+export interface CaseStudySection {
+  heading: string;
+  paragraphs?: readonly Rich[];
+  bullets?: readonly Rich[];
+}
+
+interface CaseStudyCopyBase {
+  title: Rich;
+  kind: Rich;
+  /** Plain text: used for the meta description and social cards. */
+  summary: string;
+  intro: Rich;
+  sections: readonly CaseStudySection[];
+  confidentiality: Rich;
+}
+
+export interface GeoDiagramCopy {
+  title: string;
+  caption: Rich;
+  source: Rich;
+  sourceDetail: Rich;
+  services: Rich;
+  events: Rich;
+  search: Rich;
+  cache: Rich;
+  storage: Rich;
+  users: Rich;
+}
+
+export interface FactoryDiagramCopy {
+  title: string;
+  caption: Rich;
+  hub: Rich;
+  modules: { machines: string; production: string; scheduling: string; warehouse: string; more: string };
+}
+
+export interface CaseStudiesCopy {
+  label: string;
+  readMore: string;
+  backToProjects: string;
+  other: string;
+  facts: { company: string; period: string; role: string; employment: string; stack: string };
+  items: {
+    geoinsight: CaseStudyCopyBase & { diagram: GeoDiagramCopy };
+    factory: CaseStudyCopyBase & { diagram: FactoryDiagramCopy };
+  };
+}
+
 export interface SiteCopy {
   meta: { title: string; description: string; siteName: string };
   nav: { label: string; skip: string; sections: Record<NavSectionId, string> };
   language: { switchTo: string; switchLabel: string };
-  theme: { toNight: string; toDay: string };
+  /** Fixed name for the Night map toggle; its on/off state is exposed with aria-pressed. */
+  theme: { label: string };
   hero: {
     name: string;
     role: Rich;
@@ -127,6 +185,7 @@ export interface SiteCopy {
     rasterClasses: Record<NdviClass, string>;
     confidential: Rich;
   };
+  caseStudies: CaseStudiesCopy;
   education: { title: string; degree: string; institution: string; location: string };
   contact: {
     title: string;

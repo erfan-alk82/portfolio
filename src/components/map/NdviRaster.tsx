@@ -67,7 +67,7 @@ export function NdviRaster({ caption, classes }: Props) {
           <path
             d="M70 30L150 22L176 74L132 118L64 104Z"
             fill="none"
-            stroke="var(--color-paper-raised)"
+            stroke="var(--color-ink)"
             strokeWidth={2}
             strokeDasharray="5 3"
           />

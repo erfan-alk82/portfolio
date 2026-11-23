@@ -11,6 +11,8 @@ type Props = {
   title: string;
   description: string;
   legend: { fullTime: string; partTime: string };
+  /** Plain-text role per job, announced with each map label. */
+  roles: Record<JobId, string>;
 };
 
 /**
@@ -198,7 +200,17 @@ function percent(value: number, total: number): string {
   return `${(value / total) * 100}%`;
 }
 
-function Overlay({ locale, geo }: { locale: Locale; geo: Geometry }) {
+function Overlay({
+  locale,
+  geo,
+  title,
+  roles,
+}: {
+  locale: Locale;
+  geo: Geometry;
+  title: string;
+  roles: Record<JobId, string>;
+}) {
   const rtl = locale === "fa";
   const labelled = [
     ...geo.main.map(({ job, at }) => ({ job, at })),
@@ -206,45 +218,103 @@ function Overlay({ locale, geo }: { locale: Locale; geo: Geometry }) {
   ];
   return (
     <div
-      aria-hidden="true"
       className="pointer-events-none absolute inset-0"
       dir={rtl ? "rtl" : "ltr"}
     >
-      {labelled.map(({ job, at }) => (
-        <div
-          key={job.id}
-          style={
-            {
-              left: percent(at[0], WIDTH),
-              top: percent(at[1], HEIGHT),
-              transform: labelTransform(LABEL_SIDE[job.id], rtl),
-            } as CSSProperties
-          }
-          className="absolute flex flex-col bg-paper-raised/85 px-1 text-[0.72rem] leading-tight sm:text-xs"
-        >
-          <span className="font-bold whitespace-nowrap text-ink">
-            {job.company}
+      {/* Each label is a link to the role in the Experience section. */}
+      <ul aria-label={title}>
+        {labelled.map(({ job, at }) => (
+          <li
+            key={job.id}
+            style={
+              {
+                left: percent(at[0], WIDTH),
+                top: percent(at[1], HEIGHT),
+                transform: labelTransform(LABEL_SIDE[job.id], rtl),
+              } as CSSProperties
+            }
+            className="absolute"
+          >
+            <a
+              href={`#job-${job.id}`}
+              data-job={job.id}
+              className="map-label pointer-events-auto flex min-h-6 flex-col rounded-sm bg-paper-raised/85 px-1 text-[0.72rem] leading-tight transition-opacity duration-200 hover:bg-paper-raised sm:text-xs"
+            >
+              <span className="font-bold whitespace-nowrap text-ink">
+                {job.company}
+              </span>
+              <span className="whitespace-nowrap text-ink-soft">
+                {formatYearSpan(locale, job.start, job.end)}
+              </span>
+              <span className="sr-only">{roles[job.id]}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+      <div aria-hidden="true">
+        {yearTicks(locale, geo.scale).map((tick) => (
+          <span
+            key={tick.label}
+            style={{
+              left: percent(tick.x, WIDTH),
+              bottom: "14px",
+              transform: "translateX(-50%)",
+            }}
+            className="absolute hidden text-[0.66rem] text-ink-soft/80 sm:block"
+          >
+            {tick.label}
           </span>
-          <span className="whitespace-nowrap text-ink-soft">
-            {formatYearSpan(locale, job.start, job.end)}
-          </span>
-        </div>
-      ))}
-      {yearTicks(locale, geo.scale).map((tick) => (
-        <span
-          key={tick.label}
-          style={{
-            left: percent(tick.x, WIDTH),
-            bottom: "14px",
-            transform: "translateX(-50%)",
-          }}
-          className="absolute hidden text-[0.66rem] text-ink-soft/80 sm:block"
-        >
-          {tick.label}
-        </span>
-      ))}
+        ))}
+      </div>
     </div>
   );
+}
+
+/** Straight segment for each full-time role (its start to the next start, or today), plus each trail. */
+function Highlights({ geo }: { geo: Geometry }) {
+  const segments = geo.main.map((m, i) => {
+    const to = geo.main[i + 1]?.at ?? geo.today;
+    return {
+      id: m.job.id,
+      d: `M${m.at[0]} ${m.at[1]}L${to[0]} ${to[1]}`,
+      color: "var(--color-signal)",
+    };
+  });
+  const trails = geo.trails.map((t) => ({
+    id: t.job.id,
+    d: t.d,
+    color: "var(--color-hydro)",
+  }));
+  return (
+    <g fill="none" strokeLinecap="round" aria-hidden="true">
+      {[...segments, ...trails].map((h) => (
+        <path
+          key={h.id}
+          d={h.d}
+          data-highlight={h.id}
+          stroke={h.color}
+          strokeWidth={9}
+          className="map-highlight"
+        />
+      ))}
+    </g>
+  );
+}
+
+/**
+ * Hover or keyboard focus on a label lights up that role on the map and dims the
+ * other labels. Pure CSS (:has), rendered once on the server: no client script.
+ */
+function highlightCss(ids: readonly JobId[]): string {
+  return ids
+    .map((id) => {
+      const active = `.survey-map:has([data-job="${id}"]:is(:hover,:focus-visible))`;
+      return (
+        `${active} [data-highlight="${id}"]{opacity:.38}` +
+        `${active} .map-label:not([data-job="${id}"]){opacity:.45}`
+      );
+    })
+    .join("");
 }
 
 function MapSvg({
@@ -323,6 +393,7 @@ function MapSvg({
           />
         </g>
       ))}
+      <Highlights geo={geo} />
       <RouteLine
         d={mainD}
         id="route-main"
@@ -364,10 +435,17 @@ function LegendSwatch({ color, dash }: { color: string; dash: string }) {
   );
 }
 
-export function SurveyMap({ locale, title, description, legend }: Props) {
+export function SurveyMap({
+  locale,
+  title,
+  description,
+  legend,
+  roles,
+}: Props) {
   const geo = geometry[locale === "fa" ? "rtl" : "ltr"];
   return (
-    <figure className="flex flex-col gap-3">
+    <figure className="survey-map flex flex-col gap-3">
+      <style>{highlightCss(jobs.map((job) => job.id))}</style>
       <div className="border border-ink p-1.5">
         {/* Coordinates are computed per direction, so the container itself never flips. */}
         <div
@@ -380,7 +458,7 @@ export function SurveyMap({ locale, title, description, legend }: Props) {
             title={title}
             description={description}
           />
-          <Overlay locale={locale} geo={geo} />
+          <Overlay locale={locale} geo={geo} title={title} roles={roles} />
         </div>
       </div>
       <figcaption className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-ink-soft">

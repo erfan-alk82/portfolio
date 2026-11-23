@@ -135,14 +135,18 @@ test.describe("night map", () => {
     await page.emulateMedia({ colorScheme: "light" });
     await page.goto("/fa");
     const toggle = page.getByTestId("theme-toggle");
-    await expect(toggle).toHaveAccessibleName("تغییر به نقشه‌ی شب");
-    await toggle.click();
-    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-    await expect(toggle).toHaveAccessibleName("تغییر به نقشه‌ی روز");
+    await expect(toggle).toHaveAccessibleName("نقشه‌ی شب");
+    // Retry the click until hydration has attached the handler (slow CI runners).
+    await expect(async () => {
+      await toggle.click();
+      await expect(page.locator("html")).toHaveAttribute("data-theme", "dark", { timeout: 500 });
+    }).toPass();
+    await expect(toggle).toHaveAttribute("aria-pressed", "true");
 
     // The boot script must set the theme before any stylesheet paints.
+    // The first animation frame runs before the first paint: the theme must already be set.
     await page.addInitScript(() => {
-      document.addEventListener("DOMContentLoaded", () => {
+      requestAnimationFrame(() => {
         (window as unknown as { themeAtLoad?: string }).themeAtLoad = document.documentElement.dataset.theme;
       });
     });

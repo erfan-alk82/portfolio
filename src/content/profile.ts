@@ -1,4 +1,4 @@
-import type { JobFacts, ProjectFacts, SkillGroupId, SpokenLanguageFacts } from "./types";
+import type { CaseStudyFacts, JobFacts, ProjectFacts, SkillGroupId, SpokenLanguageFacts } from "./types";
 
 /**
  * Language-independent facts.
@@ -109,6 +109,11 @@ export const projects: readonly ProjectFacts[] = [
   },
   { id: "samin", name: "Samin", company: "Nadin Soft", stack: [] },
   { id: "csharp-framework", name: "Fundamental Structure for C#", company: "Nadin Soft", stack: ["C#"] },
+];
+
+export const caseStudies: readonly CaseStudyFacts[] = [
+  { id: "geoinsight", slug: "geoinsight", projectId: "geoinsight", jobId: "sisootech" },
+  { id: "factory", slug: "factory-production", projectId: "factory", jobId: "dinamotor" },
 ];
 
 export const skillGroupOrder: readonly SkillGroupId[] = [

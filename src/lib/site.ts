@@ -47,7 +47,7 @@ export const siteUrl = resolveSiteUrl({
  * hreflang map shared by page metadata and the sitemap so they cannot drift.
  * x-default is the default locale itself, not "/" (which redirects).
  */
-export function languageAlternates(base: URL): Record<string, string> {
-  const entries = locales.map((locale) => [locale, new URL(`/${locale}`, base).href]);
-  return Object.fromEntries([...entries, ["x-default", new URL(`/${defaultLocale}`, base).href]]);
+export function languageAlternates(base: URL, path = ""): Record<string, string> {
+  const entries = locales.map((locale) => [locale, new URL(`/${locale}${path}`, base).href]);
+  return Object.fromEntries([...entries, ["x-default", new URL(`/${defaultLocale}${path}`, base).href]]);
 }

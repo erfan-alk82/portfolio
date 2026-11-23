@@ -1,5 +1,11 @@
-import { ArrowUpRight } from "lucide-react";
-import { projects, type ProjectFacts, type SiteCopy } from "@/content";
+import Link from "next/link";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
+import {
+  caseStudies,
+  projects,
+  type ProjectFacts,
+  type SiteCopy,
+} from "@/content";
 import type { Locale } from "@/i18n/config";
 import { formatPeriod } from "@/lib/dates";
 import { NdviRaster } from "@/components/map/NdviRaster";
@@ -89,14 +95,44 @@ function ProjectLinks({
   );
 }
 
+/** "Read the case study" for projects that have one; nothing otherwise. */
+function CaseStudyLink({
+  project,
+  locale,
+  label,
+}: {
+  project: ProjectFacts;
+  locale: Locale;
+  label: string;
+}) {
+  const study = caseStudies.find((s) => s.projectId === project.id);
+  if (!study) return null;
+  return (
+    <Link
+      href={`/${locale}/case-studies/${study.slug}`}
+      data-testid={`case-study-link-${study.id}`}
+      className="link-signal inline-flex min-h-11 w-fit items-center gap-2 font-semibold"
+    >
+      {label}
+      <ArrowRight
+        aria-hidden="true"
+        className="size-4 rtl:rotate-180"
+        strokeWidth={1.75}
+      />
+    </Link>
+  );
+}
+
 function ProjectRow({
   project,
   locale,
   copy,
+  readMore,
 }: {
   project: ProjectFacts;
   locale: Locale;
   copy: ProjectCopyBlock;
+  readMore: string;
 }) {
   const item = copy.items[project.id];
   const separator = locale === "fa" ? "، " : ", ";
@@ -120,6 +156,7 @@ function ProjectRow({
           separator={separator}
         />
         <ProjectLinks project={project} copy={copy} />
+        <CaseStudyLink project={project} locale={locale} label={readMore} />
       </div>
       <ProjectMeta project={project} locale={locale} />
     </li>
@@ -166,6 +203,11 @@ export function Projects({ locale, copy }: Props) {
             stack={featured.stack}
             separator={separator}
           />
+          <CaseStudyLink
+            project={featured}
+            locale={locale}
+            label={copy.caseStudies.readMore}
+          />
         </div>
         <div className="lg:col-span-7">
           <NdviRaster
@@ -182,6 +224,7 @@ export function Projects({ locale, copy }: Props) {
             project={project}
             locale={locale}
             copy={text}
+            readMore={copy.caseStudies.readMore}
           />
         ))}
       </ul>

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE, isLocale } from "@/i18n/config";
 import { pickLocale } from "@/i18n/negotiate";
+import { isUnknownCaseStudy } from "@/i18n/routes";
 
 /**
  * Locale routing:
@@ -14,7 +15,10 @@ export function proxy(request: NextRequest): NextResponse {
   const remembered = request.cookies.get(LOCALE_COOKIE)?.value;
 
   if (isLocale(firstSegment)) {
-    const response = NextResponse.next();
+    // Streamed pages cannot change their status later; answer unknown slugs with the 404 page now.
+    const response = isUnknownCaseStudy(pathname)
+      ? NextResponse.rewrite(new URL(`/${firstSegment}/not-found`, request.url))
+      : NextResponse.next();
     if (remembered !== firstSegment) {
       response.cookies.set(LOCALE_COOKIE, firstSegment, {
         maxAge: LOCALE_COOKIE_MAX_AGE,

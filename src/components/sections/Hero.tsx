@@ -1,9 +1,10 @@
 import { Download, MapPin } from "lucide-react";
-import { profile, type SiteCopy } from "@/content";
+import { jobs, profile, type JobId, type SiteCopy } from "@/content";
 import type { Locale } from "@/i18n/config";
 import { SurveyMap } from "@/components/map/SurveyMap";
 import { Availability } from "@/components/ui/Availability";
 import { Rich } from "@/components/ui/Rich";
+import { plainText } from "@/lib/rich";
 
 type Props = {
   locale: Locale;
@@ -12,6 +13,9 @@ type Props = {
 
 export function Hero({ locale, copy }: Props) {
   const { hero } = copy;
+  const roles = Object.fromEntries(
+    jobs.map((job) => [job.id, plainText(copy.experience.jobs[job.id].role)]),
+  ) as Record<JobId, string>;
 
   return (
     <section
@@ -75,6 +79,7 @@ export function Hero({ locale, copy }: Props) {
         title={hero.mapTitle}
         description={hero.mapDescription}
         legend={hero.mapLegend}
+        roles={roles}
       />
     </section>
   );

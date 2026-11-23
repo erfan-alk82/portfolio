@@ -6,6 +6,8 @@ import { ThemeToggle } from "./ThemeToggle";
 interface SiteHeaderProps {
   locale: Locale;
   copy: SiteCopy;
+  /** Path after the locale for sub-pages ("/case-studies/x"). Section links then point home. */
+  path?: string;
 }
 
 const NAV_ORDER: readonly NavSectionId[] = [
@@ -16,12 +18,14 @@ const NAV_ORDER: readonly NavSectionId[] = [
   "contact",
 ];
 
-export function SiteHeader({ locale, copy }: SiteHeaderProps) {
+export function SiteHeader({ locale, copy, path = "" }: SiteHeaderProps) {
   const other: Locale = locale === "fa" ? "en" : "fa";
+  // On the home page sections are same-page anchors; elsewhere they lead back home.
+  const home = path ? `/${locale}` : "";
   const links = NAV_ORDER.map((id) => (
     <li key={id} className="shrink-0">
       <a
-        href={`#${id}`}
+        href={`${home}#${id}`}
         className="inline-flex min-h-11 items-center px-1 text-sm font-medium text-ink-soft transition-colors duration-150 hover:text-signal-deep"
       >
         {copy.nav.sections[id]}
@@ -48,11 +52,12 @@ export function SiteHeader({ locale, copy }: SiteHeaderProps) {
           <ul className="flex items-center gap-6">{links}</ul>
         </nav>
         <div className="flex items-center gap-2">
-          <ThemeToggle labels={copy.theme} />
+          <ThemeToggle label={copy.theme.label} />
           <LanguageSwitch
             target={other}
             label={copy.language.switchTo}
             hint={copy.language.switchLabel}
+            path={path}
           />
         </div>
       </div>
