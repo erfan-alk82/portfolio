@@ -1,6 +1,7 @@
 import { ArrowUpRight, Download, Mail, Phone } from "lucide-react";
 import { profile, type SiteCopy } from "@/content";
 import type { Locale } from "@/i18n/config";
+import { Availability } from "@/components/ui/Availability";
 import { Rich } from "@/components/ui/Rich";
 import { CopyEmailButton } from "./CopyEmailButton";
 
@@ -32,6 +33,11 @@ export function Contact({ locale, copy }: Props) {
           <p className="measure text-lg text-paper/85">
             <Rich text={contact.lead} />
           </p>
+          <Availability
+            label={copy.availability.label}
+            value={copy.availability.value}
+            tone="band"
+          />
           <div className="flex flex-col gap-2">
             <p className="text-sm text-paper/70">{contact.emailLabel}</p>
             <a

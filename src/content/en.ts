@@ -45,6 +45,15 @@ export const en = {
       { label: "Working since", value: "2021" },
       { label: "Education", value: "Bachelor's in Computer Engineering" },
     ],
+    languages: {
+      label: "Languages",
+      names: { fa: "Persian", en: "English" },
+      levels: { native: "native", intermediate: "intermediate" },
+    },
+  },
+  availability: {
+    label: "Availability",
+    value: "Open to remote roles, project-based work and freelance",
   },
   experience: {
     title: "Experience",

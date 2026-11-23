@@ -12,6 +12,15 @@ export type JobId = "sisootech" | "dinamotor" | "pantrylab" | "nadinsoft" | "uni
 export type ProjectId = "geoinsight" | "pantrylab" | "factory" | "samin" | "csharp-framework";
 export type Employment = "full-time" | "part-time";
 export type ProjectLinkKind = "website" | "appStore" | "googlePlay";
+export type SpokenLanguage = "fa" | "en";
+export type LanguageLevel = "native" | "intermediate";
+
+export interface SpokenLanguageFacts {
+  code: SpokenLanguage;
+  level: LanguageLevel;
+  /** Label used in cv/erfan.yaml, checked by tests/unit/cv-sync.test.ts. */
+  cvLabel: string;
+}
 export type SkillGroupId = "backend" | "frontend" | "mobile" | "data" | "devops" | "architecture";
 export type NdviClass = "bare" | "sparse" | "moderate" | "healthy" | "dense";
 
@@ -90,7 +99,13 @@ export interface SiteCopy {
     mapDescription: string;
     mapLegend: { fullTime: string; partTime: string };
   };
-  about: { title: string; paragraphs: readonly Rich[]; facts: readonly Fact[] };
+  about: {
+    title: string;
+    paragraphs: readonly Rich[];
+    facts: readonly Fact[];
+    languages: { label: string; names: Record<SpokenLanguage, string>; levels: Record<LanguageLevel, string> };
+  };
+  availability: { label: string; value: string };
   experience: {
     title: string;
     intro: string;

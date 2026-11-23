@@ -1,4 +1,4 @@
-import type { JobFacts, ProjectFacts, SkillGroupId } from "./types";
+import type { JobFacts, ProjectFacts, SkillGroupId, SpokenLanguageFacts } from "./types";
 
 /**
  * Language-independent facts.
@@ -22,6 +22,11 @@ export const profile = {
   /** Month the content was last updated; open-ended roles are drawn up to here. */
   asOf: "2026-11",
 } as const;
+
+export const languages: readonly SpokenLanguageFacts[] = [
+  { code: "fa", level: "native", cvLabel: "Persian" },
+  { code: "en", level: "intermediate", cvLabel: "English" },
+];
 
 /** Newest first by start date. Part-time roles ran in parallel with full-time ones. */
 export const jobs: readonly JobFacts[] = [

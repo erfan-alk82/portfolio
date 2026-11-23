@@ -1,4 +1,4 @@
-import type { SiteCopy } from "@/content";
+import { languages, type SiteCopy } from "@/content";
 import { Rich } from "@/components/ui/Rich";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
@@ -38,6 +38,24 @@ export function About({ copy }: Props) {
               </dd>
             </div>
           ))}
+          <div className="flex flex-col gap-1 border-b border-rule py-4">
+            <dt className="text-sm text-contour-strong">
+              {about.languages.label}
+            </dt>
+            <dd className="font-semibold text-ink">
+              <ul className="flex flex-col gap-0.5">
+                {languages.map((language) => (
+                  <li key={language.code}>
+                    <span>{about.languages.names[language.code]}</span>
+                    <span className="font-normal text-ink-soft">
+                      {" "}
+                      ({about.languages.levels[language.level]})
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </dd>
+          </div>
         </dl>
       </div>
     </section>

@@ -9,5 +9,5 @@ export function getCopy(locale: Locale): SiteCopy {
   return copy[locale];
 }
 
-export { jobs, profile, projects, skillGroupOrder } from "./profile";
+export { jobs, languages, profile, projects, skillGroupOrder } from "./profile";
 export type * from "./types";

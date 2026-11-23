@@ -2,6 +2,7 @@ import { Download, MapPin } from "lucide-react";
 import { profile, type SiteCopy } from "@/content";
 import type { Locale } from "@/i18n/config";
 import { SurveyMap } from "@/components/map/SurveyMap";
+import { Availability } from "@/components/ui/Availability";
 import { Rich } from "@/components/ui/Rich";
 
 type Props = {
@@ -61,6 +62,12 @@ export function Hero({ locale, copy }: Props) {
             />
             {hero.cvAction}
           </a>
+        </div>
+        <div className="mt-6">
+          <Availability
+            label={copy.availability.label}
+            value={copy.availability.value}
+          />
         </div>
       </div>
       <SurveyMap

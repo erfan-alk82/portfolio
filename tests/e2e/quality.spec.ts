@@ -117,6 +117,25 @@ test.describe("career data", () => {
   }
 });
 
+test.describe("availability and languages", () => {
+  const expected = {
+    fa: { availability: "آماده‌ی همکاری دورکاری، پروژه‌ای و فریلنس", languages: ["فارسی", "انگلیسی"] },
+    en: { availability: "Open to remote roles, project-based work and freelance", languages: ["Persian", "English"] },
+  } as const;
+
+  for (const locale of LOCALES) {
+    test(`/${locale} shows availability in hero and contact, and spoken languages`, async ({ page }) => {
+      await page.goto(`/${locale}`);
+      const availability = page.getByTestId("availability");
+      await expect(availability).toHaveCount(2);
+      await expect(availability.first()).toContainText(expected[locale].availability);
+      for (const language of expected[locale].languages) {
+        await expect(page.locator("#about dd", { hasText: language })).toHaveCount(1);
+      }
+    });
+  }
+});
+
 test.describe("routing edges", () => {
   test("a URL with no locale and a file extension gets the default-locale 404", async ({ page }) => {
     const response = await page.goto("/wp-login.php");

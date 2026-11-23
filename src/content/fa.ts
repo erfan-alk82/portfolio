@@ -45,6 +45,15 @@ export const fa = {
       { label: "شروع فعالیت حرفه‌ای", value: "۱۴۰۰" },
       { label: "تحصیلات", value: "کارشناسی مهندسی کامپیوتر" },
     ],
+    languages: {
+      label: "زبان‌ها",
+      names: { fa: "فارسی", en: "انگلیسی" },
+      levels: { native: "زبان مادری", intermediate: "متوسط" },
+    },
+  },
+  availability: {
+    label: "وضعیت همکاری",
+    value: "آماده‌ی همکاری دورکاری، پروژه‌ای و فریلنس",
   },
   experience: {
     title: "سوابق کاری",
