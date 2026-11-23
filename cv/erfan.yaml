@@ -1,0 +1,213 @@
+cv:
+  name: Erfan Alikhani
+  headline: Full-Stack Developer | .NET & React
+  location: Tehran, Iran
+  email: erfanalikhani6@gmail.com
+  phone: "+989365833763"
+  social_networks:
+    - network: LinkedIn
+      username: erfan-alikhani
+    - network: GitHub
+      username: erfan-alk82
+    - network: Telegram
+      username: erfan_alk82
+
+  sections:
+    professional_summary:
+      - >-
+        Full-Stack Developer with over five years of experience building web and
+        mobile applications, enterprise platforms, and backend services.
+        Specialized in ASP.NET Core, C#, microservices, distributed systems,
+        and modern frontend development with React, Next.js, TypeScript, and
+        React Native. Experienced in event-driven architecture, CQRS, Clean
+        Architecture, API gateways, search systems, and data-intensive
+        applications using Kafka, Redis, Elasticsearch, and SQL Server.
+        Background includes enterprise GIS, financial management systems,
+        factory production management, and AI-powered consumer applications,
+        including leading a front-end team. Focused on maintainable software,
+        system reliability, and collaborative delivery from design through
+        deployment.
+
+    experience:
+      - company: Sisootech
+        position: Full Stack Engineer
+        location: Tehran, Iran (On-site)
+        start_date: "2025-08"
+        end_date: present
+        highlights:
+          - >-
+            Develop and maintain GeoInsight Platform, an enterprise GIS
+            and geospatial analytics platform for land assessment and
+            environmental monitoring.
+          - >-
+            Design and develop backend microservices using ASP.NET Core,
+            Elasticsearch, Redis, Kafka, and SQL Server.
+          - >-
+            Implement advanced search and satellite-derived environmental
+            indicators, including NDVI, land surface temperature,
+            vegetation health, and climate indicators.
+          - >-
+            Apply event-driven architecture and distributed-systems
+            principles to support availability, reliability, and
+            data consistency.
+
+      - company: Pantry Lab
+        position: React Native Developer (Part-time)
+        location: Remote, Amsterdam, Netherlands
+        start_date: "2024-09"
+        end_date: "2026-10"
+        highlights:
+          - >-
+            Built the iOS and Android apps with React Native and Expo, and the
+            website ([pantrylab.net](https://pantrylab.net/)) with Next.js, for
+            a Dutch startup.
+          - >-
+            Built features for a household management platform covering
+            shopping, food-waste reduction, and household finances.
+          - >-
+            Integrated AI-powered image recognition to help users identify
+            refrigerator contents and maintain food inventories.
+          - >-
+            Used TanStack, Zustand, and Material UI (MUI) to build
+            maintainable, responsive, and intuitive interfaces.
+
+      - company: Dinamotor Software
+        position: Front-end Team Lead (Part-time)
+        location: Remote, Tehran, Iran
+        start_date: "2023-10"
+        end_date: "2026-11"
+        highlights:
+          - >-
+            Led front-end development part-time and remotely, in parallel
+            with full-time roles.
+          - >-
+            Worked on an application that manages factory production lines
+            end to end, including machines, production, staff scheduling,
+            and warehouse.
+
+      - company: Nadin Soft
+        position: Full-Stack Developer (from Junior Frontend Developer)
+        location: Tehran, Iran
+        start_date: "2023-06"
+        end_date: "2025-07"
+        highlights:
+          - >-
+            Progressed from Junior Frontend Developer (Jun 2023) to Mid-level
+            Frontend Developer working with TypeScript, React, and Vue, and to
+            Full-Stack Developer (Oct 2024 – Jul 2025) with ASP.NET Web API and
+            Clean Architecture.
+          - >-
+            Contributed to Samin, an integrated management system for
+            financial institutions, supporting scalable organizational
+            management workflows.
+          - >-
+            Designed and developed a reusable C# framework adopted across
+            company projects to improve consistency and maintainability.
+          - >-
+            Implemented CQRS, Ocelot API Gateway, and AutoMapper to
+            structure backend services and simplify API communication.
+
+      - company: United Techies
+        position: Front-end Developer
+        location: Tehran, Iran
+        start_date: "2021-08"
+        end_date: "2023-05"
+        highlights:
+          - >-
+            Developed responsive web interfaces for client-facing and
+            enterprise applications with React, Next.js, and TypeScript.
+          - >-
+            Collaborated with cross-functional teams in agile workflows
+            to deliver frontend features and improvements.
+          - >-
+            Built foundational expertise in JavaScript, component-based
+            development, and frontend state management.
+
+    technical_skills:
+      - label: Backend Development
+        details: C#, .NET, ASP.NET Core, ASP.NET Web API, CQRS, Ocelot, AutoMapper, Microservices, Event-Driven Architecture
+      - label: Frontend Development
+        details: JavaScript, TypeScript, React, Next.js, Vue, Vite, TanStack, Zustand, Material UI (MUI)
+      - label: Mobile Development
+        details: React Native, Expo
+      - label: Data & Messaging
+        details: SQL Server, Elasticsearch, Redis, Apache Kafka
+      - label: DevOps & Tools
+        details: Docker, Git
+      - label: Architecture & Engineering
+        details: Distributed Systems, Clean Architecture, System Design, CAP Theorem, API Design, Debugging, Problem Solving, Teamwork
+
+    selected_projects:
+      - name: GeoInsight Platform
+        date: "2025-08 to Present"
+        highlights:
+          - >-
+            Enterprise GIS and geospatial analytics platform for land
+            assessment and environmental monitoring.
+          - >-
+            Supports advanced search and analysis of satellite-derived
+            environmental indicators.
+          - >-
+            Technology stack includes ASP.NET Core, Elasticsearch, Redis,
+            Kafka, and SQL Server.
+
+      - name: PantryLab
+        date: "2024-09 to 2026-10"
+        highlights:
+          - >-
+            Household management application for shopping, inventory,
+            food-waste reduction, and household finances.
+          - >-
+            Includes AI-powered image recognition for refrigerator
+            inventory management.
+          - >-
+            Website, iOS, and Android apps built with Next.js, React Native,
+            and Expo. [Website](https://pantrylab.net/),
+            [App Store](https://apps.apple.com/us/app/pantry-lab/id6740086525),
+            [Google Play](https://play.google.com/store/apps/details?id=pantry.lab).
+
+      - name: Factory Production Management (Dinamotor)
+        date: "2023-10 to 2026-11"
+        highlights:
+          - >-
+            Application that manages factory production lines end to end:
+            machines, production, staff scheduling, and warehouse.
+          - >-
+            Led its front-end development as Front-end Team Lead.
+
+      - name: Samin - Financial Institution Management System
+        highlights:
+          - >-
+            Contributed to an integrated management platform for
+            financial institutions at Nadin Soft, focusing on scalable
+            full-stack functionality.
+
+      - name: Fundamental Structure for C#
+        highlights:
+          - >-
+            Designed and developed a reusable C# framework at Nadin Soft to
+            improve consistency and maintainability across company projects.
+
+      - name: Confidential Enterprise Projects
+        highlights:
+          - >-
+            Contributed to proprietary client and enterprise applications
+            across multiple projects, subject to confidentiality
+            restrictions.
+
+    languages:
+      - label: Persian
+        details: Native
+      - label: English
+        details: Intermediate
+
+    education:
+      - institution: Shamsipour Technical and Vocational College
+        area: Computer Engineering
+        degree: Bachelor's Degree
+        location: Tehran, Iran
+        start_date: "2020-01"
+        end_date: "2025-01"
+
+design:
+  theme: engineeringclassic

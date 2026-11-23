@@ -1,5 +1,5 @@
 /**
- * Builds the downloadable CV from ../erfan.yaml (the RenderCV source) and writes it
+ * Builds the downloadable CV from cv/erfan.yaml (the RenderCV source) and writes it
  * to public/cv/Erfan-Alikhani-CV.pdf. The owner chose to publish the phone number,
  * so the CV is rendered as written.
  *
@@ -10,7 +10,7 @@ import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promi
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
-const source = resolve(process.cwd(), "..", "erfan.yaml");
+const source = resolve(process.cwd(), "cv", "erfan.yaml");
 const target = resolve(process.cwd(), "public", "cv", "Erfan-Alikhani-CV.pdf");
 
 function findPython() {

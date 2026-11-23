@@ -36,7 +36,8 @@
     "tailwindcss": "4.3.5",
     "typescript": "~6.0.3",
     "vazirmatn": "^33.0.3",
-    "vitest": "^5.1.1"
+    "vitest": "^5.1.1",
+    "yaml": "^2.9.1"
   },
   "type": "module"
 }
