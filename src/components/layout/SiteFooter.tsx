@@ -7,8 +7,8 @@ type Props = {
 
 export function SiteFooter({ copy }: Props) {
   return (
-    <footer className="on-ink bg-ink text-paper/75">
-      <div className="mx-auto flex max-w-[90rem] flex-wrap items-center justify-between gap-4 border-t border-paper/15 px-5 py-6 text-sm sm:px-8 lg:px-12">
+    <footer className="on-band bg-band text-on-band/75">
+      <div className="mx-auto flex max-w-[90rem] flex-wrap items-center justify-between gap-4 border-t border-on-band/15 px-5 py-6 text-sm sm:px-8 lg:px-12">
         <p>{copy.footer.note}</p>
         <a
           href="#top"

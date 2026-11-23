@@ -57,7 +57,7 @@ export function CopyEmailButton({ email, labels }: Props) {
         type="button"
         onClick={handleClick}
         data-testid="copy-email"
-        className="inline-flex min-h-12 items-center gap-2 rounded-sm bg-paper px-5 font-semibold text-ink transition-colors duration-150 hover:bg-signal-light active:translate-y-px"
+        className="inline-flex min-h-12 items-center gap-2 rounded-sm bg-on-band px-5 font-semibold text-band transition-colors duration-150 hover:bg-signal-light active:translate-y-px"
       >
         {state === "copied" ? (
           <Check
@@ -70,7 +70,7 @@ export function CopyEmailButton({ email, labels }: Props) {
         )}
         {labels.copy}
       </button>
-      <p role="status" className="min-h-6 text-sm text-paper/80">
+      <p role="status" className="min-h-6 text-sm text-on-band/80">
         {message}
       </p>
     </div>

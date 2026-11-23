@@ -20,7 +20,7 @@ export function Contact({ locale, copy }: Props) {
     <section
       id="contact"
       aria-labelledby="contact-title"
-      className="on-ink bg-ink text-paper"
+      className="on-band bg-band text-on-band"
     >
       <div className="mx-auto grid max-w-[90rem] gap-14 px-5 py-20 sm:px-8 lg:grid-cols-12 lg:gap-12 lg:px-12 lg:py-28">
         <div className="flex flex-col gap-8 lg:col-span-7">
@@ -30,7 +30,7 @@ export function Contact({ locale, copy }: Props) {
           >
             {contact.title}
           </h2>
-          <p className="measure text-lg text-paper/85">
+          <p className="measure text-lg text-on-band/85">
             <Rich text={contact.lead} />
           </p>
           <Availability
@@ -39,22 +39,22 @@ export function Contact({ locale, copy }: Props) {
             tone="band"
           />
           <div className="flex flex-col gap-2">
-            <p className="text-sm text-paper/70">{contact.emailLabel}</p>
+            <p className="text-sm text-on-band/70">{contact.emailLabel}</p>
             <a
               href={`mailto:${profile.email}`}
               dir="ltr"
-              className="display w-fit text-[clamp(1.5rem,0.9rem+3.2vw,3.5rem)] font-bold [overflow-wrap:anywhere] text-paper underline decoration-signal-light/60 decoration-1 underline-offset-[0.18em] hover:decoration-signal-light"
+              className="display w-fit text-[clamp(1.5rem,0.9rem+3.2vw,3.5rem)] font-bold [overflow-wrap:anywhere] text-on-band underline decoration-signal-light/60 decoration-1 underline-offset-[0.18em] hover:decoration-signal-light"
             >
               {profile.email}
             </a>
           </div>
           <div className="flex flex-col gap-2">
-            <p className="text-sm text-paper/70">{contact.phoneLabel}</p>
+            <p className="text-sm text-on-band/70">{contact.phoneLabel}</p>
             <a
               href={`tel:${profile.phone.tel}`}
               dir="ltr"
               data-testid="phone"
-              className="inline-flex w-fit items-center gap-3 text-2xl font-semibold text-paper underline decoration-signal-light/60 decoration-1 underline-offset-[0.2em] hover:decoration-signal-light"
+              className="inline-flex w-fit items-center gap-3 text-2xl font-semibold text-on-band underline decoration-signal-light/60 decoration-1 underline-offset-[0.2em] hover:decoration-signal-light"
             >
               <Phone aria-hidden="true" className="size-5" strokeWidth={1.75} />
               {profile.phone.display[locale]}
@@ -71,7 +71,7 @@ export function Contact({ locale, copy }: Props) {
             />
             <a
               href={`mailto:${profile.email}`}
-              className="inline-flex min-h-12 items-center gap-2 rounded-sm border border-paper/40 px-5 font-semibold transition-colors duration-150 hover:border-signal-light hover:text-signal-light"
+              className="inline-flex min-h-12 items-center gap-2 rounded-sm border border-on-band/40 px-5 font-semibold transition-colors duration-150 hover:border-signal-light hover:text-signal-light"
             >
               <Mail aria-hidden="true" className="size-4" strokeWidth={1.75} />
               {contact.compose}
@@ -80,10 +80,10 @@ export function Contact({ locale, copy }: Props) {
         </div>
 
         <div className="flex flex-col gap-4 lg:col-span-4 lg:col-start-9 lg:self-end">
-          <h3 className="text-sm text-paper/70">{contact.elsewhere}</h3>
-          <ul className="border-t border-paper/25">
+          <h3 className="text-sm text-on-band/70">{contact.elsewhere}</h3>
+          <ul className="border-t border-on-band/25">
             {SOCIAL_ORDER.map((key) => (
-              <li key={key} className="border-b border-paper/25">
+              <li key={key} className="border-b border-on-band/25">
                 <a
                   href={profile.social[key].url}
                   target="_blank"
@@ -91,7 +91,7 @@ export function Contact({ locale, copy }: Props) {
                   className="group flex min-h-14 items-center justify-between gap-4 py-3 transition-colors duration-150 hover:text-signal-light"
                 >
                   <span className="font-semibold">{contact.links[key]}</span>
-                  <span className="flex items-center gap-2 text-sm text-paper/75 group-hover:text-signal-light">
+                  <span className="flex items-center gap-2 text-sm text-on-band/75 group-hover:text-signal-light">
                     <bdi dir="ltr" lang="en">
                       {profile.social[key].handle}
                     </bdi>
@@ -104,7 +104,7 @@ export function Contact({ locale, copy }: Props) {
                 </a>
               </li>
             ))}
-            <li className="border-b border-paper/25">
+            <li className="border-b border-on-band/25">
               <a
                 href={profile.cvPath}
                 download

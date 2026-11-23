@@ -19,6 +19,7 @@ export const fa = {
     },
   },
   language: { switchTo: "English", switchLabel: "نمایش این صفحه به انگلیسی" },
+  theme: { toNight: "تغییر به نقشه‌ی شب", toDay: "تغییر به نقشه‌ی روز" },
   hero: {
     name: "عرفان علیخانی",
     role: "توسعه‌دهنده فول‌استک [[.NET]] و [[React]]",

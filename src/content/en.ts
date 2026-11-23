@@ -19,6 +19,7 @@ export const en = {
     },
   },
   language: { switchTo: "فارسی", switchLabel: "Read this page in Persian" },
+  theme: { toNight: "Switch to night map", toDay: "Switch to day map" },
   hero: {
     name: "Erfan Alikhani",
     role: "Full-stack developer, [[.NET]] & [[React]]",

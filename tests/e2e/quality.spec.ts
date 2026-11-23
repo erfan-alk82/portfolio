@@ -117,6 +117,52 @@ test.describe("career data", () => {
   }
 });
 
+test.describe("night map", () => {
+  const NIGHT_PAPER = "rgb(14, 24, 36)";
+  const DAY_PAPER = "rgb(232, 236, 230)";
+  const background = (page: import("@playwright/test").Page) =>
+    page.evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
+
+  test("follows the system preference when nothing is saved", async ({ page }) => {
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.goto("/en");
+    expect(await background(page)).toBe(NIGHT_PAPER);
+    await page.emulateMedia({ colorScheme: "light" });
+    expect(await background(page)).toBe(DAY_PAPER);
+  });
+
+  test("the toggle switches, is remembered, and applies before paint", async ({ page }) => {
+    await page.emulateMedia({ colorScheme: "light" });
+    await page.goto("/fa");
+    const toggle = page.getByTestId("theme-toggle");
+    await expect(toggle).toHaveAccessibleName("تغییر به نقشه‌ی شب");
+    await toggle.click();
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    await expect(toggle).toHaveAccessibleName("تغییر به نقشه‌ی روز");
+
+    // The boot script must set the theme before any stylesheet paints.
+    await page.addInitScript(() => {
+      document.addEventListener("DOMContentLoaded", () => {
+        (window as unknown as { themeAtLoad?: string }).themeAtLoad = document.documentElement.dataset.theme;
+      });
+    });
+    await page.reload();
+    expect(await page.evaluate(() => (window as unknown as { themeAtLoad?: string }).themeAtLoad)).toBe("dark");
+    expect(await background(page)).toBe(NIGHT_PAPER);
+  });
+
+  for (const locale of LOCALES) {
+    test(`/${locale} has no WCAG 2.2 AA violations at night`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
+      await page.goto(`/${locale}`);
+      const results = await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+        .analyze();
+      expect(results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(" | ")}`)).toEqual([]);
+    });
+  }
+});
+
 test.describe("availability and languages", () => {
   const expected = {
     fa: { availability: "آماده‌ی همکاری دورکاری، پروژه‌ای و فریلنس", languages: ["فارسی", "انگلیسی"] },

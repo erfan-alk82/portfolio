@@ -87,6 +87,7 @@ export interface SiteCopy {
   meta: { title: string; description: string; siteName: string };
   nav: { label: string; skip: string; sections: Record<NavSectionId, string> };
   language: { switchTo: string; switchLabel: string };
+  theme: { toNight: string; toDay: string };
   hero: {
     name: string;
     role: Rich;

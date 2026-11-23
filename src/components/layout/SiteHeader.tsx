@@ -1,6 +1,7 @@
 import type { Locale } from "@/i18n/config";
 import type { NavSectionId, SiteCopy } from "@/content";
 import { LanguageSwitch } from "./LanguageSwitch";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface SiteHeaderProps {
   locale: Locale;
@@ -46,11 +47,14 @@ export function SiteHeader({ locale, copy }: SiteHeaderProps) {
         <nav aria-label={copy.nav.label} className="hidden md:block">
           <ul className="flex items-center gap-6">{links}</ul>
         </nav>
-        <LanguageSwitch
-          target={other}
-          label={copy.language.switchTo}
-          hint={copy.language.switchLabel}
-        />
+        <div className="flex items-center gap-2">
+          <ThemeToggle labels={copy.theme} />
+          <LanguageSwitch
+            target={other}
+            label={copy.language.switchTo}
+            hint={copy.language.switchLabel}
+          />
+        </div>
       </div>
       <nav
         aria-label={copy.nav.label}

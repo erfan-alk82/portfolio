@@ -18,8 +18,11 @@
   --color-vegetation: #2f6b3b;
   --color-signal: #b0186e;
   --color-signal-deep: #8c1257;
-  /* Signal on the ink band, where the base magenta lacks contrast. */
+  /* Signal on the contact band, where the base magenta lacks contrast. */
   --color-signal-light: #f4a6cf;
+  /* The contact band and footer: a dark strip in both themes. */
+  --color-band: #18233a;
+  --color-on-band: #e8ece6;
 
   --color-ndvi-bare: #8c6d46;
   --color-ndvi-sparse: #c9b46b;
@@ -50,6 +53,51 @@
   @media (min-width: 48rem) {
     :root {
       --header-height: 4rem;
+    }
+  }
+
+  /*
+   * Night map: the same chart printed for night use. Applies when the visitor
+   * chose it (data-theme="dark") or, with no choice saved, when the system
+   * prefers dark. Every text pair is at least WCAG AA (body text 7.9:1+).
+   */
+  :root[data-theme="dark"] {
+    --color-paper: #0e1824;
+    --color-paper-raised: #142131;
+    --color-paper-sunk: #0a131d;
+    --color-ink: #e4e9e2;
+    --color-ink-soft: #a9b6c6;
+    --color-rule: #2a3a4f;
+    --color-contour: #a8865a;
+    --color-contour-strong: #d2ad78;
+    --color-hydro: #6cc0dc;
+    --color-vegetation: #74c483;
+    --color-signal: #ff6fb7;
+    --color-signal-deep: #ff9fd0;
+    --color-signal-light: #ffb3da;
+    --color-band: #172536;
+    --color-on-band: #e4e9e2;
+    color-scheme: dark;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --color-paper: #0e1824;
+      --color-paper-raised: #142131;
+      --color-paper-sunk: #0a131d;
+      --color-ink: #e4e9e2;
+      --color-ink-soft: #a9b6c6;
+      --color-rule: #2a3a4f;
+      --color-contour: #a8865a;
+      --color-contour-strong: #d2ad78;
+      --color-hydro: #6cc0dc;
+      --color-vegetation: #74c483;
+      --color-signal: #ff6fb7;
+      --color-signal-deep: #ff9fd0;
+      --color-signal-light: #ffb3da;
+      --color-band: #172536;
+      --color-on-band: #e4e9e2;
+      color-scheme: dark;
     }
   }
 
@@ -93,9 +141,9 @@
     border-radius: 2px;
   }
 
-  /* Magenta disappears on navy, so the ink band focuses in paper. */
-  .on-ink :focus-visible {
-    outline-color: var(--color-paper);
+  /* Magenta disappears on navy, so the contact band focuses in its own text colour. */
+  .on-band :focus-visible {
+    outline-color: var(--color-on-band);
   }
 
   a {
