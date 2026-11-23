@@ -16,6 +16,7 @@ export const en = {
       projects: "Projects",
       contact: "Contact",
     },
+    blog: "Blog",
   },
   language: { switchTo: "فارسی", switchLabel: "Read this page in Persian" },
   theme: { label: "Night map" },
@@ -289,6 +290,25 @@ export const en = {
   footer: {
     backToTop: "Back to top",
     note: "Erfan Alikhani, full-stack developer in Tehran",
+  },
+  blog: {
+    title: "Writing",
+    metaTitle: "Blog: technical writing by Erfan Alikhani",
+    description:
+      "Articles and technical notes by Erfan Alikhani on backend architecture, event-driven systems, frontend engineering and data-heavy software.",
+    intro:
+      "Articles and technical notes from the work: backend architecture with [[.NET]], event-driven systems, frontends in [[React]] and [[Next.js]], and the lessons in between.",
+    listLabel: "Articles",
+    empty: "No articles have been published in English yet. Check back soon.",
+    unavailable: "The articles cannot be loaded right now. Please try again in a few minutes.",
+    readMore: "Read the article",
+    published: "Published",
+    updated: "Updated",
+    backToBlog: "All articles",
+    rss: "Subscribe via [[RSS]]",
+    feedTitle: "Erfan Alikhani: writing",
+    otherLanguage: "Read in Persian",
+    loading: "Loading articles",
   },
   notFound: {
     title: "This page isn't on the map",

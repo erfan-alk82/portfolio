@@ -140,9 +140,35 @@ export interface CaseStudiesCopy {
   };
 }
 
+/** Public blog UI. Post titles and bodies come from the database, not from here. */
+export interface BlogCopy {
+  /** Visible heading of the blog index. */
+  title: string;
+  /** <title> and social title of the blog index. */
+  metaTitle: string;
+  /** Meta description of the blog index (plain text). */
+  description: string;
+  intro: Rich;
+  /** Label for the list of posts. */
+  listLabel: string;
+  empty: Rich;
+  /** Shown when the database cannot be reached; the rest of the site keeps working. */
+  unavailable: Rich;
+  readMore: string;
+  published: string;
+  updated: string;
+  backToBlog: string;
+  rss: Rich;
+  /** Title of the RSS channel. */
+  feedTitle: string;
+  /** Link to the other language's version of a post. */
+  otherLanguage: string;
+  loading: string;
+}
+
 export interface SiteCopy {
   meta: { title: string; description: string; siteName: string };
-  nav: { label: string; skip: string; sections: Record<NavSectionId, string> };
+  nav: { label: string; skip: string; sections: Record<NavSectionId, string>; blog: string };
   language: { switchTo: string; switchLabel: string };
   /** Fixed name for the Night map toggle; its on/off state is exposed with aria-pressed. */
   theme: { label: string };
@@ -186,6 +212,7 @@ export interface SiteCopy {
     confidential: Rich;
   };
   caseStudies: CaseStudiesCopy;
+  blog: BlogCopy;
   education: { title: string; degree: string; institution: string; location: string };
   contact: {
     title: string;

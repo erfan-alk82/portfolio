@@ -33,6 +33,10 @@ function persianRichStrings(): string[] {
     fa.caseStudies.items.factory.diagram.caption,
     fa.caseStudies.items.factory.diagram.hub,
     ...Object.values(fa.caseStudies.items.factory.diagram.modules),
+    fa.blog.intro,
+    fa.blog.rss,
+    fa.blog.empty,
+    fa.blog.unavailable,
   ];
 }
 
@@ -85,6 +89,20 @@ describe("bilingual content", () => {
         expect(section.bullets?.length ?? 0, `${id} §${i}`).toBe(enSections[i].bullets?.length ?? 0);
       });
     }
+  });
+
+  test("blog copy is complete in both languages", () => {
+    expect(Object.keys(fa.blog).sort()).toEqual(Object.keys(en.blog).sort());
+    for (const locale of locales) {
+      const { blog, nav } = getCopy(locale);
+      expect(nav.blog, locale).toBeTruthy();
+      for (const [key, value] of Object.entries(blog)) expect(value, `${locale}.blog.${key}`).toBeTruthy();
+    }
+  });
+
+  test("the Persian blog nav item is «وبلاگ»", () => {
+    expect(fa.nav.blog).toBe("وبلاگ");
+    expect(en.nav.blog).toBe("Blog");
   });
 
   test("about facts line up one to one", () => {
