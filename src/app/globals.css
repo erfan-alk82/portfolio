@@ -1,0 +1,169 @@
+@import "tailwindcss";
+
+/*
+ * Survey Atlas tokens. Colours come from cartographic print conventions:
+ * mineral paper, navy map ink, ochre contours, hydro blue, vegetation green,
+ * and aeronautical-chart magenta reserved for interaction and focus.
+ */
+@theme static {
+  --color-paper: #e8ece6;
+  --color-paper-raised: #f3f5f1;
+  --color-paper-sunk: #dde2db;
+  --color-ink: #18233a;
+  --color-ink-soft: #3b465c;
+  --color-rule: #b9c1b8;
+  --color-contour: #8a6a3f;
+  --color-contour-strong: #6e5330;
+  --color-hydro: #1d6b86;
+  --color-vegetation: #2f6b3b;
+  --color-signal: #b0186e;
+  --color-signal-deep: #8c1257;
+  /* Signal on the ink band, where the base magenta lacks contrast. */
+  --color-signal-light: #f4a6cf;
+
+  --color-ndvi-bare: #8c6d46;
+  --color-ndvi-sparse: #c9b46b;
+  --color-ndvi-moderate: #9dbf6a;
+  --color-ndvi-healthy: #5e9a4a;
+  --color-ndvi-dense: #2f6b3b;
+
+  --font-latin: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-persian: var(--font-vazirmatn), Tahoma, ui-sans-serif, sans-serif;
+
+  --text-hero: clamp(3rem, 1.6rem + 6.4vw, 7.25rem);
+  --text-section: clamp(2rem, 1.4rem + 2.6vw, 3.5rem);
+
+  --ease-survey: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@layer base {
+  :root {
+    --font-body: var(--font-latin);
+    --leading-body: 1.6;
+    --leading-heading: 0.92;
+    --display-width: 72;
+    /* Two rows (bar + scrollable nav) on small screens, one from md up. */
+    --header-height: 6.85rem;
+    color-scheme: light;
+  }
+
+  @media (min-width: 48rem) {
+    :root {
+      --header-height: 4rem;
+    }
+  }
+
+  /* Persian needs taller lines for dots and descenders, and no condensed axis. */
+  :root:lang(fa) {
+    --font-body: var(--font-persian);
+    --leading-body: 1.95;
+    --leading-heading: 1.25;
+    --display-width: 100;
+  }
+
+  html {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    line-height: var(--leading-body);
+    text-rendering: optimizeLegibility;
+    -webkit-text-size-adjust: 100%;
+    scroll-padding-block-start: calc(var(--header-height) + 1.5rem);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
+  body {
+    min-block-size: 100dvh;
+    background: var(--color-paper);
+  }
+
+  ::selection {
+    background: var(--color-signal);
+    color: var(--color-paper-raised);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-signal);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  /* Magenta disappears on navy, so the ink band focuses in paper. */
+  .on-ink :focus-visible {
+    outline-color: var(--color-paper);
+  }
+
+  a {
+    text-underline-offset: 0.22em;
+    text-decoration-thickness: 1px;
+  }
+}
+
+@layer components {
+  .display {
+    font-variation-settings: "wdth" var(--display-width);
+    line-height: var(--leading-heading);
+    letter-spacing: -0.02em;
+  }
+
+  :lang(fa) .display {
+    letter-spacing: 0;
+  }
+
+  .measure {
+    max-inline-size: 66ch;
+  }
+
+  /* Hairline graticule used behind the hero map. */
+  .graticule {
+    background-image:
+      linear-gradient(to right, color-mix(in oklab, var(--color-hydro) 14%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklab, var(--color-hydro) 14%, transparent) 1px, transparent 1px);
+    background-size: 12.5% 16.666%;
+  }
+
+  .link-signal {
+    color: var(--color-ink);
+    text-decoration-line: underline;
+    text-decoration-color: color-mix(in oklab, var(--color-signal) 55%, transparent);
+    transition:
+      color 160ms var(--ease-survey),
+      text-decoration-color 160ms var(--ease-survey);
+  }
+
+  .link-signal:hover {
+    color: var(--color-signal-deep);
+    text-decoration-color: var(--color-signal);
+  }
+}
+
+/* The only automatic motion on the page: the career route draws itself once. */
+@media (prefers-reduced-motion: no-preference) {
+  .route-reveal {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: route-draw 1.8s var(--ease-survey) 0.25s forwards;
+  }
+
+  .waypoint {
+    opacity: 0;
+    animation: waypoint-in 420ms var(--ease-survey) forwards;
+  }
+}
+
+@keyframes route-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes waypoint-in {
+  to {
+    opacity: 1;
+  }
+}
