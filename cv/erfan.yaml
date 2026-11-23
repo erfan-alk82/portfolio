@@ -175,12 +175,16 @@ cv:
           - >-
             Led its front-end development as Front-end Team Lead.
 
-      - name: Samin - Financial Institution Management System
+      - name: Samin - Integrated Management System of Financial Institutions
         highlights:
           - >-
-            Contributed to an integrated management platform for
-            financial institutions at Nadin Soft, focusing on scalable
-            full-stack functionality.
+            Integrated management system for financial institutions at
+            Nadin Soft, built with the latest version of Vue.js at the time.
+          - >-
+            Developed a dynamic form builder that significantly accelerated
+            development and streamlined the process.
+          - >-
+            Initiated the collaboration on the Persian-components package.
 
       - name: Fundamental Structure for C#
         highlights:

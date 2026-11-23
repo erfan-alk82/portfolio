@@ -157,8 +157,10 @@ export const en = {
         description: "An application that runs a factory production line end to end: machines, production, staff scheduling and warehouse. I led its front-end development.",
       },
       samin: {
-        kind: "Management system for financial institutions",
-        description: "An integrated management platform for financial institutions. I contributed scalable full-stack functionality.",
+        name: "Samin",
+        kind: "Integrated management system for financial institutions",
+        description:
+          "An integrated management system for financial institutions, built with the latest version of [[Vue]] at the time. I developed a dynamic form builder that sped up development considerably, and started the collaboration on the Persian-components package.",
       },
       "csharp-framework": {
         kind: "Reusable [[C#]] framework",

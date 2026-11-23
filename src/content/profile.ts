@@ -107,7 +107,8 @@ export const projects: readonly ProjectFacts[] = [
     period: { start: "2023-10", end: "2026-11" },
     stack: [],
   },
-  { id: "samin", name: "Samin", company: "Nadin Soft", stack: [] },
+  // Named per language in the copy: "Samin" / «سمین».
+  { id: "samin", company: "Nadin Soft", stack: ["Vue"] },
   { id: "csharp-framework", name: "Fundamental Structure for C#", company: "Nadin Soft", stack: ["C#"] },
 ];
 
