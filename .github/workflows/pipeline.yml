@@ -25,6 +25,7 @@ concurrency:
 
 env:
   VERCEL_CLI_VERSION: 66.6.0
+  LHCI_VERSION: 0.16.1
   NEXT_TELEMETRY_DISABLED: 1
 
 jobs:
@@ -77,6 +78,15 @@ jobs:
         run: npx playwright install-deps chromium
       - run: npm run build
       - run: npm run test:e2e
+      - name: Lighthouse (accessibility = 100, SEO = 100, best practices ≥ 95)
+        run: npx --yes "@lhci/cli@${LHCI_VERSION}" autorun
+      - name: Upload Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: lighthouse-reports
+          path: lighthouse-reports/
+          retention-days: 14
       - name: Upload traces on failure
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -138,7 +148,7 @@ jobs:
     timeout-minutes: 15
     environment:
       name: production
-      url: ${{ vars.PRODUCTION_URL || steps.deploy.outputs.url }}
+      url: ${{ vars.PRODUCTION_URL || 'https://erfanalikhani.vercel.app' }}
     # Never run two production deploys at once, and never cancel one halfway.
     concurrency:
       group: vercel-production
@@ -147,7 +157,7 @@ jobs:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-      PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}
+      PRODUCTION_URL: ${{ vars.PRODUCTION_URL || 'https://erfanalikhani.vercel.app' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
