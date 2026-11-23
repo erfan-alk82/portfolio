@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { clientIp, throttleKeys } from "@/server/auth/client-ip";
-import { createSessionToken, hashSessionToken, readSessionToken } from "@/server/auth/token";
+import { createSessionToken, hashSessionToken, readSessionToken, safeEqual } from "@/server/auth/token";
 
 const secret = "a-test-secret-that-is-at-least-32-bytes-long";
 
@@ -66,5 +66,14 @@ describe("client IP and throttle keys", () => {
     expect(keys[0].key).not.toContain("203.0.113.7");
     expect(throttleKeys("203.0.113.7", secret)[0].key).toBe(keys[0].key);
     expect(throttleKeys(null, secret)).toEqual([{ kind: "global", key: "global" }]);
+  });
+});
+
+describe("safeEqual", () => {
+  test("compares strings of any length without leaking the length", () => {
+    expect(safeEqual("admin", "admin")).toBe(true);
+    expect(safeEqual("admin", "Admin")).toBe(false);
+    expect(safeEqual("admin", "administrator")).toBe(false);
+    expect(safeEqual("", "")).toBe(true);
   });
 });

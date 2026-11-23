@@ -36,3 +36,8 @@ export function readSessionToken(cookieValue: string | undefined, secret: string
 export function hashSessionToken(token: string): Buffer {
   return createHash("sha256").update(token).digest();
 }
+
+/** Constant-time string comparison: both sides are hashed first, so lengths do not leak either. */
+export function safeEqual(a: string, b: string): boolean {
+  return timingSafeEqual(createHash("sha256").update(a).digest(), createHash("sha256").update(b).digest());
+}

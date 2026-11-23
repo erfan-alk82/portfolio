@@ -6,8 +6,9 @@ const isDev = process.env.NODE_ENV !== "production";
  * The site is statically generated, so a per-request nonce is not available,
  * and the App Router streams its RSC payload through inline <script> tags
  * (self.__next_f.push), which SRI cannot hash. Scripts therefore need
- * 'unsafe-inline'. There is no user-generated content and no third-party script,
- * and everything else is locked to this origin.
+ * 'unsafe-inline'. There is no third-party script, and everything else is
+ * locked to this origin. Blog posts are written only by the signed-in admin
+ * and rendered without raw HTML (MarkdownBody), with same-origin images only.
  */
 const contentSecurityPolicy = [
   "default-src 'self'",
@@ -31,6 +32,12 @@ const securityHeaders = [
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), browsing-topics=()" },
 ];
 
+/** The admin must never be indexed or stored by a shared cache. */
+const adminHeaders = [
+  { key: "X-Robots-Tag", value: "noindex, nofollow" },
+  { key: "Cache-Control", value: "no-store" },
+];
+
 const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
@@ -46,8 +53,17 @@ const nextConfig: NextConfig = {
       },
     },
   },
+  experimental: {
+    serverActions: {
+      // A post body may hold up to 200,000 characters (up to ~800 kB of UTF-8 Persian) plus form overhead.
+      bodySizeLimit: "2mb",
+    },
+  },
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      { source: "/admin/:path*", headers: adminHeaders },
+    ];
   },
 };
 

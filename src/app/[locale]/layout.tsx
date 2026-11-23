@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo, Vazirmatn } from "next/font/google";
 import { getCopy } from "@/content";
 import {
   defaultLocale,
@@ -10,20 +9,8 @@ import {
 } from "@/i18n/config";
 import { siteUrl } from "@/lib/site";
 import { themeBootScript } from "@/lib/theme";
+import { fontVariables } from "../fonts";
 import "../globals.css";
-
-const archivo = Archivo({
-  subsets: ["latin"],
-  axes: ["wdth"],
-  variable: "--font-archivo",
-  display: "swap",
-});
-
-const vazirmatn = Vazirmatn({
-  subsets: ["arabic", "latin"],
-  variable: "--font-vazirmatn",
-  display: "swap",
-});
 
 export function generateStaticParams(): { locale: Locale }[] {
   return locales.map((locale) => ({ locale }));
@@ -97,7 +84,7 @@ export default async function LocaleLayout({
     <html
       lang={locale}
       dir={directionOf(locale)}
-      className={`${archivo.variable} ${vazirmatn.variable}`}
+      className={fontVariables}
       suppressHydrationWarning
     >
       <head>

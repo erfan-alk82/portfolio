@@ -43,6 +43,8 @@ export function proxy(request: NextRequest): NextResponse {
 }
 
 export const config = {
-  // Skip Next internals and any path with a file extension (robots.txt, the CV PDF, icons).
-  matcher: ["/((?!_next/|.*\\.[\\w]+$).*)"],
+  // Skip Next internals, the admin (English-only, outside the locale tree), API routes and
+  // any path with a file extension (robots.txt, the CV PDF, icons, feed.xml).
+  // "admin(?:/|$)" skips /admin and /admin/... but still localizes e.g. /administrator.
+  matcher: ["/((?!_next/|admin(?:/|$)|api/|.*\\.[\\w]+$).*)"],
 };
