@@ -8,6 +8,12 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    ignore:
+      # typescript-eslint (bundled by eslint-config-next) refuses to run on TypeScript 7 and
+      # supports ">=4.8.4 <6.1.0". Remove once it supports TS 7:
+      # https://github.com/typescript-eslint/typescript-eslint/issues/10940
+      - dependency-name: typescript
+        versions: [">=6.1.0"]
     groups:
       next-react:
         patterns: ["next", "eslint-config-next", "react", "react-dom", "@types/react", "@types/react-dom"]
