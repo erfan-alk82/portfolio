@@ -17,7 +17,8 @@ export default defineConfig({
     { name: "mobile", use: { ...devices["Pixel 7"] }, grepInvert: /@desktop-only/ },
   ],
   webServer: {
-    command: `npm run start -- -p ${PORT}`,
+    command: "npm run start",
+    env: { PORT: String(PORT) },
     url: `http://localhost:${PORT}/en`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

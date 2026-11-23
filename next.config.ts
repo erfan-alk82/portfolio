@@ -35,6 +35,9 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   poweredByHeader: false,
+  // Self-contained server (server.js + traced node_modules) for Docker and `npm start`.
+  // Vercel builds through its own Next.js adapter (and sets VERCEL=1), so it is skipped there.
+  output: process.env.VERCEL ? undefined : "standalone",
   turbopack: {
     rules: {
       "*.css": {

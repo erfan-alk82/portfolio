@@ -9,7 +9,7 @@ Both pages are statically generated.
 ```bash
 npm run dev            # local development at http://localhost:3000
 npm run build          # production build (needs SITE_URL, see below)
-npm run start          # serve the production build
+npm start              # serve the production build (standalone server, like Docker)
 npm run lint
 npm run typecheck
 npm test               # unit tests (Vitest)
@@ -22,6 +22,66 @@ npm run cv:public      # regenerate the public CV PDF from ../erfan.yaml
 Run `npm run build` before `npm run test:e2e`; Playwright starts `next start` on port 3100.
 Review screenshots: `CAPTURE=1 npx playwright test screenshots --project=desktop` writes
 `test-results/screens/`.
+
+## Deployment (Vercel, via GitHub Actions)
+
+`.github/workflows/pipeline.yml` is the only way code reaches Vercel. Vercel's own Git
+auto-deploy is switched off in `vercel.json`, so an untested commit can never go live.
+
+| Event                     | What runs                                                                    |
+| ------------------------- | ---------------------------------------------------------------------------- |
+| Pull request → `master` | lint, types, unit tests → e2e (fa/en, desktop/mobile) + Docker build → **preview** deploy |
+| Push to `master`        | the same checks → **production** deploy → smoke test of the live site        |
+| Monday (Dependabot)       | grouped update PRs for npm, Actions and the Docker base image, each with the full pipeline and a preview |
+
+### One-time setup
+
+1. **Create the Vercel project.** In `portfolio/`, run `npx vercel@66.6.0 link`. It
+   writes `.vercel/project.json` (git-ignored) with `orgId` and `projectId`.
+   Importing the repo in the Vercel dashboard also works.
+2. **Vercel → Project → Settings → Environment Variables:** add
+   `SITE_URL=https://your-domain` for **Production** and **Preview**. Previews use the
+   production origin in their canonical links, which is what search engines should see.
+3. **Vercel → Project → Settings → Domains:** add your domain.
+4. **Create a token** at vercel.com/account/tokens.
+5. **GitHub → repo → Settings → Secrets and variables → Actions:**
+   - Secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID` (the last two
+     come from `.vercel/project.json`).
+   - Variable: `PRODUCTION_URL=https://your-domain`. This turns on the post-deploy
+     smoke test.
+6. *(Recommended)* **Protect `master`:** require the checks *Lint, types, unit tests*,
+   *End-to-end* and *Docker image builds* before merging.
+
+After that, `git push origin master` deploys automatically. Each run's summary shows
+the deployed URL.
+
+## Docker
+
+The image runs the Next.js standalone server on `node:26.7.0-alpine3.23` as the
+unprivileged `node` user, with a healthcheck on `/robots.txt`.
+
+`SITE_URL` is a **build argument**. Canonical URLs, hreflang, the sitemap and social
+images are baked into the static pages, so build one image per public origin.
+
+```bash
+cp .env.example .env            # set SITE_URL=https://your-domain; compose reads .env
+docker compose up --build -d    # http://localhost:3000 (override with PORT=8080)
+docker compose logs -f
+docker compose down
+```
+
+Without compose:
+
+```bash
+docker build --build-arg SITE_URL=https://your-domain -t erfan-portfolio .
+docker run --rm -p 3000:3000 --read-only --tmpfs /tmp   --tmpfs /app/.next/cache:uid=1000,gid=1000   --tmpfs /app/.next/server/route-cache:uid=1000,gid=1000   --cap-drop ALL --security-opt no-new-privileges:true erfan-portfolio
+```
+
+`compose.yaml` runs the container with a read-only root filesystem, no Linux
+capabilities, `no-new-privileges`, and CPU, memory and process limits. Next.js
+writes only its caches, which live in size-capped tmpfs mounts. Put a reverse proxy
+(nginx, Caddy, Traefik) in front for TLS, as the Next.js self-hosting guide
+recommends; the app already sends HSTS and the other security headers.
 
 ## Configuration
 

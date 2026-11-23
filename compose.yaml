@@ -1,0 +1,31 @@
+# Production-like run of the portfolio image.
+#   SITE_URL=https://example.com docker compose up --build -d
+# SITE_URL is baked into the pages at build time (canonical URLs, hreflang, sitemap).
+
+services:
+  web:
+    build:
+      context: .
+      args:
+        SITE_URL: ${SITE_URL:?Set SITE_URL to the public origin, e.g. https://example.com}
+    image: erfan-portfolio:latest
+    ports:
+      - "${PORT:-3000}:3000"
+    restart: unless-stopped
+    # Hardening: the root filesystem is read-only. Next only writes its caches, which
+    # live in size-capped memory so unknown URLs cannot grow them without bound.
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m
+      - /app/.next/cache:uid=1000,gid=1000,size=64m
+      - /app/.next/server/route-cache:uid=1000,gid=1000,size=16m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+          pids: 256

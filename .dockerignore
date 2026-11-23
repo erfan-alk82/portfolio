@@ -1,0 +1,30 @@
+# Dependencies and build output are produced inside the image.
+node_modules
+.next
+out
+
+# Local secrets and machine config never enter the build context.
+.env*
+!.env.example
+
+# Tests, reports and tooling the image does not need.
+tests
+test-results
+playwright-report
+coverage
+playwright.config.ts
+vitest.config.mts
+scripts
+
+# Repository and editor noise.
+.git
+.gitignore
+.vscode
+.idea
+*.log
+*.tsbuildinfo
+Dockerfile
+.dockerignore
+compose.yaml
+README.md
+AGENTS.md
