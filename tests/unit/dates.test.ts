@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { formatPeriod, formatYear, formatYearSpan, jalaliYear } from "@/lib/dates";
+import { formatPeriod, formatPostDate, formatYear, formatYearSpan, jalaliYear } from "@/lib/dates";
 
 describe("formatYearSpan", () => {
   test("gives compact year ranges for map labels", () => {
@@ -62,5 +62,19 @@ describe("formatPeriod", () => {
 
   test("Persian marks an open period with اکنون", () => {
     expect(formatPeriod("fa", "2025-09", null)).toBe("۱۴۰۴ – اکنون");
+  });
+});
+
+describe("formatPostDate", () => {
+  test("writes a Gregorian day in English", () => {
+    expect(formatPostDate("en", "2026-11-01T10:00:00.000Z")).toBe("1 November 2026");
+  });
+
+  test("writes a Solar Hijri day with Persian digits", () => {
+    expect(formatPostDate("fa", "2026-11-01T10:00:00.000Z")).toBe("۱۰ آبان ۱۴۰۵");
+  });
+
+  test("uses Tehran time, so a late-evening UTC post lands on the next Tehran day", () => {
+    expect(formatPostDate("en", "2026-11-01T22:00:00.000Z")).toBe("2 November 2026");
   });
 });

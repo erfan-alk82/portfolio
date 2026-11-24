@@ -67,7 +67,9 @@ for (const locale of LOCALES) {
         const other = locale === "fa" ? "en" : "fa";
         await expect(page.getByTestId("language-switch")).toHaveAttribute("href", `/${other}/case-studies/${study.slug}`);
         const navHrefs = await page.locator("header nav a").evaluateAll((links) => links.map((a) => a.getAttribute("href")));
-        for (const href of navHrefs) expect(href).toMatch(new RegExp(`^/${locale}#`));
+        // Section links lead back to the home page; the blog is its own page.
+        for (const href of navHrefs) expect(href).toMatch(new RegExp(`^/${locale}(#|/blog$)`));
+        expect(navHrefs).toContain(`/${locale}/blog`);
       });
 
       test("has no WCAG 2.2 AA violations", async ({ page }) => {

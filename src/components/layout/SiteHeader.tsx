@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Locale } from "@/i18n/config";
 import type { NavSectionId, SiteCopy } from "@/content";
 import { LanguageSwitch } from "./LanguageSwitch";
@@ -22,16 +23,28 @@ export function SiteHeader({ locale, copy, path = "" }: SiteHeaderProps) {
   const other: Locale = locale === "fa" ? "en" : "fa";
   // On the home page sections are same-page anchors; elsewhere they lead back home.
   const home = path ? `/${locale}` : "";
-  const links = NAV_ORDER.map((id) => (
-    <li key={id} className="shrink-0">
-      <a
-        href={`${home}#${id}`}
-        className="inline-flex min-h-11 items-center px-1 text-sm font-medium text-ink-soft transition-colors duration-150 hover:text-signal-deep"
+  const itemClass =
+    "inline-flex min-h-11 items-center px-1 text-sm font-medium text-ink-soft transition-colors duration-150 hover:text-signal-deep";
+  const onBlog = path === "/blog" || path.startsWith("/blog/");
+  const links = [
+    ...NAV_ORDER.map((id) => (
+      <li key={id} className="shrink-0">
+        <a href={`${home}#${id}`} className={itemClass}>
+          {copy.nav.sections[id]}
+        </a>
+      </li>
+    )),
+    // The blog is a page of its own, not a section of the home page.
+    <li key="blog" className="shrink-0">
+      <Link
+        href={`/${locale}/blog`}
+        aria-current={onBlog ? "page" : undefined}
+        className={`${itemClass} aria-[current=page]:text-ink aria-[current=page]:underline aria-[current=page]:decoration-signal aria-[current=page]:decoration-2 aria-[current=page]:underline-offset-8`}
       >
-        {copy.nav.sections[id]}
-      </a>
-    </li>
-  ));
+        {copy.nav.blog}
+      </Link>
+    </li>,
+  ];
 
   return (
     <header className="sticky top-0 z-30 border-b border-rule bg-paper">

@@ -5,6 +5,10 @@
 #
 # Vercel's own Git auto-deploy is disabled in vercel.json, so nothing reaches production
 # unless every check here passes. Setup steps (secrets, variables) are in README.md.
+#
+# The blog database: e2e runs against a throwaway PostgreSQL service with a throwaway
+# admin; deploys apply drizzle/ migrations to secrets.DATABASE_URL (production) or
+# secrets.PREVIEW_DATABASE_URL (previews) and skip with a notice when those are unset.
 
 name: Pipeline
 
@@ -50,10 +54,28 @@ jobs:
     needs: quality
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:18.7-alpine3.23
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: blog_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d blog_e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     env:
       # Origin baked into the test build; tests only compare paths.
       SITE_URL: http://localhost:3000
       CI: true
+      # The app and the e2e admin flow use blog_e2e; the integration tests empty their
+      # tables, so they get the service's default database instead.
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/blog_e2e
+      TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -76,6 +98,25 @@ jobs:
       - name: Install Chromium system dependencies
         if: steps.browsers.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
+      - name: Create a throwaway admin for this run
+        run: |
+          set -euo pipefail
+          password="$(openssl rand -base64 24)"
+          secret="$(openssl rand -base64 48)"
+          echo "::add-mask::$password"
+          echo "::add-mask::$secret"
+          hash="$(printf %s "$password" | node scripts/hash-password.mjs)"
+          {
+            echo "ADMIN_USERNAME=ci-admin"
+            echo "ADMIN_PASSWORD_HASH=$hash"
+            echo "SESSION_SECRET=$secret"
+            echo "E2E_ADMIN_USERNAME=ci-admin"
+            echo "E2E_ADMIN_PASSWORD=$password"
+          } >> "$GITHUB_ENV"
+      - name: Apply database migrations
+        run: node scripts/migrate.mjs
+      - name: Integration tests (real PostgreSQL)
+        run: npm run test:integration
       - run: npm run build
       - run: npm run test:e2e
       - name: Lighthouse (accessibility = 100, SEO = 100, best practices ≥ 95)
@@ -104,6 +145,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Build image (not pushed)
         run: docker build --build-arg SITE_URL=https://example.com -t erfan-portfolio:ci .
+      - name: Build the migration image (not pushed)
+        run: docker build --target migrate -t erfan-portfolio-migrate:ci .
 
   preview:
     name: Deploy preview
@@ -133,6 +176,18 @@ jobs:
       - run: npm install --global "vercel@${VERCEL_CLI_VERSION}"
       - run: vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
       - run: vercel build --token="$VERCEL_TOKEN"
+      # Previews must never migrate the production database: only a dedicated preview one.
+      - name: Migrate the preview database
+        env:
+          DATABASE_URL: ${{ secrets.PREVIEW_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DATABASE_URL:-}" ]; then
+            echo "::notice::PREVIEW_DATABASE_URL is not set; skipping migrations for this preview."
+            exit 0
+          fi
+          [ -d node_modules/postgres ] || npm ci --no-audit --no-fund
+          node scripts/migrate.mjs
       - name: Deploy
         id: deploy
         run: |
@@ -172,6 +227,19 @@ jobs:
       - run: npm install --global "vercel@${VERCEL_CLI_VERSION}"
       - run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
       - run: vercel build --prod --token="$VERCEL_TOKEN"
+      # Before deploy, so the new code never runs against an old schema. Migrations are
+      # additive, so the still-live previous deployment keeps working meanwhile.
+      - name: Migrate the production database
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DATABASE_URL:-}" ]; then
+            echo "::notice::DATABASE_URL secret is not set; skipping migrations. The site deploys, and the blog shows its unavailable message until a database is configured."
+            exit 0
+          fi
+          [ -d node_modules/postgres ] || npm ci --no-audit --no-fund
+          node scripts/migrate.mjs
       - name: Deploy
         id: deploy
         run: |
@@ -182,7 +250,7 @@ jobs:
         if: env.PRODUCTION_URL != ''
         run: |
           set -euo pipefail
-          for path in /fa /en /robots.txt /sitemap.xml /cv/Erfan-Alikhani-CV.pdf; do
+          for path in /fa /en /fa/blog /en/feed.xml /robots.txt /sitemap.xml /cv/Erfan-Alikhani-CV.pdf; do
             code=$(curl -s -o /dev/null -w '%{http_code}' --retry 5 --retry-delay 5 --retry-all-errors "$PRODUCTION_URL$path")
             echo "$path → $code"
             [ "$code" = "200" ] || { echo "::error::$PRODUCTION_URL$path returned $code"; exit 1; }

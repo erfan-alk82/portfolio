@@ -55,6 +55,22 @@ export function formatYear(locale: Locale, value: string): string {
 
 const PRESENT: Record<Locale, string> = { en: "Present", fa: "اکنون" };
 
+/** Posts are written in Tehran, so their dates follow Tehran's calendar day. */
+const postDateFormat: Record<Locale, Intl.DateTimeFormat> = {
+  en: new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Tehran" }),
+  fa: new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Asia/Tehran",
+  }),
+};
+
+/** "1 November 2026" in English, "۱۰ آبان ۱۴۰۵" in Persian (Solar Hijri). */
+export function formatPostDate(locale: Locale, iso: string): string {
+  return postDateFormat[locale].format(new Date(iso));
+}
+
 /** Compact "2021–2023" / "۱۴۰۰–۱۴۰۲" for space-constrained labels such as the hero map. */
 export function formatYearSpan(locale: Locale, start: string, end: string | null): string {
   const to = end === null ? PRESENT[locale] : formatYear(locale, end);

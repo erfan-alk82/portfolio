@@ -1,19 +1,18 @@
 import type { MetadataRoute } from "next";
 import { caseStudies } from "@/content";
-import { locales } from "@/i18n/config";
-import { languageAlternates, siteUrl } from "@/lib/site";
+import { buildSitemap } from "@/lib/blog/sitemap";
+import { siteUrl } from "@/lib/site";
+import { listPublished } from "@/server/blog/queries";
 
-/** Home and every case study, each listed per language with its hreflang alternates. */
-export default function sitemap(): MetadataRoute.Sitemap {
-  const paths = [
-    "",
-    ...caseStudies.map((study) => `/case-studies/${study.slug}`),
-  ];
-  return paths.flatMap((path) => {
-    const languages = languageAlternates(siteUrl, path);
-    return locales.map((locale) => ({
-      url: new URL(`/${locale}${path}`, siteUrl).href,
-      alternates: { languages },
-    }));
-  });
+/**
+ * Rendered per request (posts are published at runtime).
+ * - DATABASE_URL intentionally unset: there is no blog, so the static pages are listed.
+ * - Database failing: throw (a 500), so crawlers keep the last good sitemap instead of
+ *   receiving one that silently dropped every post.
+ */
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const posts = await listPublished();
+  if (posts.status === "unavailable") throw new Error("Sitemap unavailable: the blog database cannot be reached");
+  const staticPaths = ["", "/blog", ...caseStudies.map((study) => `/case-studies/${study.slug}`)];
+  return buildSitemap(siteUrl, staticPaths, posts.items);
 }

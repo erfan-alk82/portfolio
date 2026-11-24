@@ -1,17 +1,78 @@
-# Production-like run of the portfolio image.
-#   SITE_URL=https://example.com docker compose up --build -d
+# Production-like run of the portfolio with its blog database.
+#   cp .env.example .env    # set SITE_URL, POSTGRES_PASSWORD and the ADMIN_* / SESSION_SECRET values
+#   docker compose up --build -d
 # SITE_URL is baked into the pages at build time (canonical URLs, hreflang, sitemap).
+# Start order: db (healthy) → migrate (applies drizzle/, exits 0) → web.
 
 services:
+  db:
+    image: postgres:18.7-alpine3.23
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: portfolio
+      POSTGRES_USER: portfolio
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD (a long random string) for the blog database}
+    volumes:
+      - db-data:/var/lib/postgresql
+    # No published port: only the app containers on this network reach the database.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U portfolio -d portfolio"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+    shm_size: 128m
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+
+  migrate:
+    build:
+      context: .
+      target: migrate
+    image: erfan-portfolio-migrate:latest
+    environment:
+      DATABASE_URL: postgres://portfolio:${POSTGRES_PASSWORD}@db:5432/portfolio
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
   web:
     build:
       context: .
       args:
         SITE_URL: ${SITE_URL:?Set SITE_URL to the public origin, e.g. https://example.com}
     image: erfan-portfolio:latest
+    # Behind a reverse proxy on the same host (with TRUST_PROXY=1), publish on loopback only,
+    # so nobody can reach the app directly and forge X-Forwarded-For:
+    #   - "127.0.0.1:${PORT:-3000}:3000"
     ports:
       - "${PORT:-3000}:3000"
     restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    # Runtime secrets only (never build args, so they are not baked into the image).
+    # Without the ADMIN_* values the site and blog still work; only /admin is disabled.
+    environment:
+      DATABASE_URL: postgres://portfolio:${POSTGRES_PASSWORD}@db:5432/portfolio
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-}
+      ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH:-}
+      SESSION_SECRET: ${SESSION_SECRET:-}
+      # Set to 1 only behind a reverse proxy that overwrites X-Forwarded-For (per-IP login limits).
+      TRUST_PROXY: ${TRUST_PROXY:-0}
     # Hardening: the root filesystem is read-only. Next only writes its caches, which
     # live in size-capped memory so unknown URLs cannot grow them without bound.
     read_only: true
@@ -29,3 +90,6 @@ services:
           cpus: "1.0"
           memory: 512M
           pids: 256
+
+volumes:
+  db-data:
