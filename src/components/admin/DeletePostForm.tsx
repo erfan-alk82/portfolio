@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { deletePost, type ActionState } from "@/app/admin/(dashboard)/posts/actions";
+import { SubmitButton } from "./FormControls";
 
 type Props = {
   id: string;
@@ -55,10 +56,10 @@ export function DeletePostForm({ id, slug }: Props) {
         </p>
       ) : null}
       <div className="flex flex-wrap gap-3">
-        <button type="submit" className="admin-button-danger" disabled={pending || confirmation.trim() !== slug}>
+        <SubmitButton className="admin-button-danger" unavailable={pending || confirmation.trim() !== slug}>
           {pending ? "Deleting…" : "Delete permanently"}
-        </button>
-        <button type="button" className="admin-button" onClick={() => setOpen(false)} disabled={pending}>
+        </SubmitButton>
+        <button type="button" className="admin-button" onClick={() => setOpen(false)}>
           Cancel
         </button>
       </div>

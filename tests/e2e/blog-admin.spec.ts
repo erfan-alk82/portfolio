@@ -13,15 +13,21 @@ const username = process.env.E2E_ADMIN_USERNAME ?? "";
 const password = process.env.E2E_ADMIN_PASSWORD ?? "";
 const enabled = Boolean(process.env.DATABASE_URL && username && password);
 
-// Unique per run, so reruns against the same database never collide.
-const slug = `e2e-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
-const faTitle = "یادداشت آزمایشی";
+// Short on purpose: with " | site name" the <title> stays under 30 characters, a visible warning.
+const faTitle = "آزمون";
 const enTitle = "An end-to-end test post about publishing";
+const NOT_FOUND = { fa: "این صفحه روی نقشه نیست", en: "This page isn't on the map" } as const;
 
 async function expectNoAxeViolations(page: Page): Promise<void> {
   await page.emulateMedia({ reducedMotion: "reduce" });
   const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
   expect(results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(" | ")}`)).toEqual([]);
+}
+
+async function expectNotFound(page: Page, path: string, locale: "fa" | "en"): Promise<void> {
+  await page.goto(path);
+  await expect(page.getByRole("heading", { name: NOT_FOUND[locale] })).toBeVisible();
+  await expect(page.locator('meta[name="robots"]').first()).toHaveAttribute("content", /noindex/);
 }
 
 test.describe("blog admin @desktop-only", () => {
@@ -34,8 +40,11 @@ test.describe("blog admin @desktop-only", () => {
   let context: BrowserContext;
   let page: Page;
   let editorUrl = "";
+  let slug = "";
 
   test.beforeAll(async ({ browser }, testInfo) => {
+    // Unique per run and per retry attempt, so nothing collides with an earlier try.
+    slug = `e2e-${Date.now().toString(36)}-r${testInfo.retry}-${Math.random().toString(36).slice(2, 6)}`;
     context = await browser.newContext({ baseURL: testInfo.project.use.baseURL });
     page = await context.newPage();
   });
@@ -44,7 +53,10 @@ test.describe("blog admin @desktop-only", () => {
     await context.close();
   });
 
-  test("signed out, /admin leads to the login page", async () => {
+  test("signed out, /admin answers a real 307 to the login page", async ({ request }) => {
+    const response = await request.get("/admin", { maxRedirects: 0 });
+    expect(response.status()).toBe(307);
+    expect(response.headers().location).toMatch(/\/admin\/login$/);
     await page.goto("/admin");
     await expect(page).toHaveURL(/\/admin\/login$/);
     await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
@@ -70,6 +82,17 @@ test.describe("blog admin @desktop-only", () => {
     await expectNoAxeViolations(page);
   });
 
+  test("an invalid draft reports its errors and focuses the first one", async () => {
+    await page.goto("/admin/posts/new");
+    await page.locator("#slug").fill("not a slug");
+    await page.locator("#en-body").fill("Body without a title");
+    await page.getByRole("button", { name: "Create draft" }).click();
+    await expect(page.locator("#slug-error")).toHaveAttribute("role", "alert");
+    await expect(page.locator("#en-title-error")).toBeVisible();
+    await expect(page.locator("#slug")).toBeFocused();
+    await expect(page.locator("#slug")).toHaveAttribute("aria-invalid", "true");
+  });
+
   test("creates a Persian + English draft with a live SEO checklist", async () => {
     await page.goto("/admin/posts/new");
     await page.locator("#slug").fill(slug);
@@ -85,7 +108,6 @@ test.describe("blog admin @desktop-only", () => {
     await expect(page.locator("#fa-body")).toHaveAttribute("dir", "rtl");
     await expect(page.locator("#fa-title")).toHaveAttribute("lang", "fa");
     await expect(page.locator("#slug")).toHaveAttribute("dir", "ltr");
-    // The Persian title is short: a visible warning, not a blocking error.
     const faWarning = page.locator('fieldset:has(#fa-title) [data-check="title-length"][data-state="warning"]');
     await expect(faWarning).toBeVisible();
     await expect(faWarning).toContainText("Warning");
@@ -100,7 +122,17 @@ test.describe("blog admin @desktop-only", () => {
     await expectNoAxeViolations(page);
   });
 
+  test("a second post cannot take the same slug", async () => {
+    await page.goto("/admin/posts/new");
+    await page.locator("#slug").fill(slug);
+    await page.locator("#en-title").fill("Duplicate");
+    await page.getByRole("button", { name: "Create draft" }).click();
+    await expect(page.locator("#slug-error")).toHaveText("Another post already uses this slug.");
+    await expect(page).toHaveURL(/\/admin\/posts\/new$/);
+  });
+
   test("publishes both languages", async () => {
+    await page.goto(editorUrl);
     await page.getByRole("button", { name: "Publish Persian" }).click();
     await expect(page.getByText("The Persian version is live.")).toBeVisible();
     await page.getByRole("button", { name: "Publish English" }).click();
@@ -126,12 +158,19 @@ test.describe("blog admin @desktop-only", () => {
       "href",
       new RegExp(`/fa/blog/${slug}$`),
     );
+    await expect(page.locator('link[rel="alternate"][type="application/rss+xml"]')).toHaveAttribute("title", /.+/);
     await expect(page.locator('meta[property="og:type"]')).toHaveAttribute("content", "article");
     await expect(page.locator('meta[property="article:published_time"]')).toHaveCount(1);
 
     const jsonLd = await page.locator('script[type="application/ld+json"]').allTextContents();
     const posting = jsonLd.map((text) => JSON.parse(text)).find((data) => data["@type"] === "BlogPosting");
-    expect(posting).toMatchObject({ headline: enTitle, inLanguage: "en", author: { "@id": expect.stringMatching(/\/#person$/) } });
+    expect(posting).toMatchObject({
+      headline: enTitle,
+      inLanguage: "en",
+      author: { "@type": "Person", "@id": expect.stringMatching(/\/#person$/), name: expect.any(String) },
+      mainEntityOfPage: { "@type": "WebPage" },
+      isPartOf: { "@type": "Blog", "@id": expect.stringMatching(/\/en\/blog#blog$/) },
+    });
     await expectNoAxeViolations(page);
   });
 
@@ -140,15 +179,25 @@ test.describe("blog admin @desktop-only", () => {
     expect(await (await request.get("/fa/feed.xml")).text()).toContain(`/fa/blog/${slug}</link>`);
   });
 
+  test("renaming the slug warns first, then moves the post", async () => {
+    await page.goto(editorUrl);
+    const renamed = `${slug}-moved`;
+    await page.locator("#slug").fill(renamed);
+    await expect(page.locator("#slug-warning")).toContainText("old URL");
+    await page.getByRole("button", { name: "Save changes" }).click();
+    await expect(page.getByText("Saved.")).toBeVisible();
+    await expectNotFound(page, `/en/blog/${slug}`, "en");
+    await page.goto(`/en/blog/${renamed}`);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(enTitle);
+    slug = renamed;
+  });
+
   test("unpublishing English removes that page and its hreflang", async () => {
     await page.goto(editorUrl);
     await page.getByRole("button", { name: "Unpublish English" }).click();
     await expect(page.getByText("The English version is back to draft.")).toBeVisible();
 
-    await page.goto(`/en/blog/${slug}`);
-    await expect(page.getByRole("heading", { name: "This page isn't on the map" })).toBeVisible();
-    await expect(page.locator('meta[name="robots"]').first()).toHaveAttribute("content", /noindex/);
-
+    await expectNotFound(page, `/en/blog/${slug}`, "en");
     await page.goto(`/fa/blog/${slug}`);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(faTitle);
     await expect(page.locator('link[rel="alternate"][hreflang="fa"]')).toHaveCount(1);
@@ -159,13 +208,13 @@ test.describe("blog admin @desktop-only", () => {
     await page.goto(editorUrl);
     await page.getByRole("button", { name: "Delete this post…" }).click();
     const confirm = page.getByRole("button", { name: "Delete permanently" });
-    await expect(confirm).toBeDisabled();
+    await expect(confirm).toHaveAttribute("aria-disabled", "true");
     await page.getByLabel(`Type ${slug} to confirm`).fill(slug);
+    await expect(confirm).not.toHaveAttribute("aria-disabled", "true");
     await confirm.click();
     await expect(page).toHaveURL(/\/admin\?deleted=1$/);
     await expect(page.getByText("The post was deleted.")).toBeVisible();
-    await page.goto(`/fa/blog/${slug}`);
-    await expect(page.getByRole("heading", { name: "این صفحه روی نقشه نیست" })).toBeVisible();
+    await expectNotFound(page, `/fa/blog/${slug}`, "fa");
   });
 
   test("signing out ends the session", async () => {

@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { login, type LoginState } from "@/app/admin/login/actions";
+import { SubmitButton } from "./FormControls";
 
 const initial: LoginState = { error: null, username: "" };
 
@@ -45,9 +46,9 @@ export function LoginForm() {
           className="admin-input"
         />
       </div>
-      <button type="submit" disabled={pending} className="admin-button-primary">
+      <SubmitButton className="admin-button-primary" unavailable={pending}>
         {pending ? "Signing in…" : "Sign in"}
-      </button>
+      </SubmitButton>
     </form>
   );
 }

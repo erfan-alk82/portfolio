@@ -3,15 +3,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
 import { Plus } from "lucide-react";
-import { locales } from "@/i18n/config";
+import { LANGUAGE_NAME_EN, locales } from "@/i18n/config";
 import { formatPostDate } from "@/lib/dates";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { listAdminPosts } from "@/server/blog/admin-queries";
 import type { AdminPostSummary } from "@/server/blog/repository";
 
 export const metadata: Metadata = { title: "Posts" };
-
-const LANGUAGE = { fa: "Persian", en: "English" } as const;
 
 function NewPostButton() {
   return (
@@ -26,6 +24,36 @@ function NewPostButton() {
 function displayTitle(post: AdminPostSummary): { text: string; lang: string } {
   const preferred = post.translations.find((t) => t.locale === "en") ?? post.translations[0];
   return preferred ? { text: preferred.title, lang: preferred.locale } : { text: post.slug, lang: "en" };
+}
+
+function PostRow({ post }: { post: AdminPostSummary }) {
+  const title = displayTitle(post);
+  const edited = post.updatedAt.toISOString();
+  return (
+    <tr className="border-b border-rule align-top">
+      <td className="py-4 pe-4">
+        <Link
+          href={`/admin/posts/${post.id}`}
+          lang={title.lang}
+          dir="auto"
+          className="font-semibold text-ink underline decoration-signal/60 underline-offset-4 hover:text-signal-deep"
+        >
+          {title.text}
+        </Link>
+        <p className="mt-1 font-mono text-xs text-ink-soft" dir="ltr">
+          {post.slug}
+        </p>
+      </td>
+      {locales.map((locale) => (
+        <td key={locale} className="py-4 pe-4">
+          <StatusBadge status={post.translations.find((t) => t.locale === locale)?.status ?? "missing"} />
+        </td>
+      ))}
+      <td className="py-4 text-sm whitespace-nowrap text-ink-soft">
+        <time dateTime={edited}>{formatPostDate("en", edited)}</time>
+      </td>
+    </tr>
+  );
 }
 
 async function PostTable() {
@@ -62,7 +90,7 @@ async function PostTable() {
             </th>
             {locales.map((locale) => (
               <th key={locale} scope="col" className="py-3 pe-4 text-start font-semibold">
-                {LANGUAGE[locale]}
+                {LANGUAGE_NAME_EN[locale]}
               </th>
             ))}
             <th scope="col" className="py-3 text-start font-semibold">
@@ -71,34 +99,9 @@ async function PostTable() {
           </tr>
         </thead>
         <tbody>
-          {posts.map((post) => {
-            const title = displayTitle(post);
-            return (
-              <tr key={post.id} className="border-b border-rule align-top">
-                <td className="py-4 pe-4">
-                  <Link
-                    href={`/admin/posts/${post.id}`}
-                    lang={title.lang}
-                    dir="auto"
-                    className="font-semibold text-ink underline decoration-signal/60 underline-offset-4 hover:text-signal-deep"
-                  >
-                    {title.text}
-                  </Link>
-                  <p className="mt-1 font-mono text-xs text-ink-soft" dir="ltr">
-                    {post.slug}
-                  </p>
-                </td>
-                {locales.map((locale) => (
-                  <td key={locale} className="py-4 pe-4">
-                    <StatusBadge status={post.translations.find((t) => t.locale === locale)?.status ?? "missing"} />
-                  </td>
-                ))}
-                <td className="py-4 text-sm whitespace-nowrap text-ink-soft">
-                  <time dateTime={post.updatedAt.toISOString()}>{formatPostDate("en", post.updatedAt.toISOString())}</time>
-                </td>
-              </tr>
-            );
-          })}
+          {posts.map((post) => (
+            <PostRow key={post.id} post={post} />
+          ))}
         </tbody>
       </table>
     </div>

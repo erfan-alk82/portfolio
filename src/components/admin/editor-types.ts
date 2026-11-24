@@ -18,5 +18,3 @@ export interface EditorPost {
 }
 
 export type EditorFields = Record<Locale, Pick<EditorTranslation, "title" | "description" | "body">>;
-
-export const LANGUAGE_NAME: Record<Locale, string> = { fa: "Persian", en: "English" };

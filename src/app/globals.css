@@ -377,7 +377,7 @@
     color: var(--color-paper);
   }
 
-  .admin-button-primary:hover:not(:disabled) {
+  .admin-button-primary:hover:not(:disabled, [aria-disabled="true"]) {
     background: var(--color-signal-deep);
   }
 
@@ -386,7 +386,7 @@
     color: var(--color-ink);
   }
 
-  .admin-button:hover:not(:disabled) {
+  .admin-button:hover:not(:disabled, [aria-disabled="true"]) {
     border-color: var(--color-signal);
     color: var(--color-signal-deep);
   }
@@ -396,12 +396,12 @@
     color: var(--color-signal-deep);
   }
 
-  .admin-button-danger:hover:not(:disabled) {
+  .admin-button-danger:hover:not(:disabled, [aria-disabled="true"]) {
     background: var(--color-signal-deep);
     color: var(--color-paper);
   }
 
-  :is(.admin-button, .admin-button-primary, .admin-button-danger):disabled {
+  :is(.admin-button, .admin-button-primary, .admin-button-danger):is(:disabled, [aria-disabled="true"]) {
     cursor: not-allowed;
     opacity: 0.55;
   }
