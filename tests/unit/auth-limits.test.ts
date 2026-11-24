@@ -1,7 +1,8 @@
 import { describe, expect, test } from "vitest";
 import { createSemaphore } from "@/server/auth/semaphore";
 import { BRAKE, brakeDelayMs } from "@/server/auth/brake";
-import { databaseSsl } from "@/server/db/tls";
+import postgres from "postgres";
+import { databaseSsl, tlsOptions } from "@/server/db/tls";
 
 describe("createSemaphore", () => {
   test("never runs more than the limit at once and runs everything", async () => {
@@ -83,5 +84,26 @@ describe("databaseSsl", () => {
 
   test("does not interfere outside production", () => {
     expect(databaseSsl("postgres://u:p@remote.example/db", false)).toBeUndefined();
+  });
+});
+
+describe("tlsOptions as postgres.js reads them", () => {
+  // postgres.js lets any `ssl` key in the options win over the URL, even `ssl: undefined`.
+  const effectiveSsl = (url: string, production: boolean): unknown =>
+    postgres(url, { ...tlsOptions(url, production) }).options.ssl;
+
+  test("keeps the URL's sslmode (Neon's own connection string)", () => {
+    const neon = "postgres://u:p@ep-x.eu-central-1.aws.neon.tech/db?sslmode=require&channel_binding=require";
+    expect(effectiveSsl(neon, true)).toBe("require");
+    expect(effectiveSsl(neon, false)).toBe("require");
+    expect(effectiveSsl("postgres://u:p@remote.example/db?sslmode=verify-full", true)).toBe("verify-full");
+  });
+
+  test("forces TLS for a remote production URL without sslmode", () => {
+    expect(effectiveSsl("postgres://u:p@ep-x.eu-central-1.aws.neon.tech/db", true)).toBe("require");
+  });
+
+  test("leaves the compose database on plain TCP", () => {
+    expect(effectiveSsl("postgres://u:p@db:5432/portfolio", true)).toBe(false);
   });
 });

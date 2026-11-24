@@ -55,11 +55,12 @@ export function connect() {
 
   const ssl = sslFor(url);
 
+  // No `ssl` key when the URL's sslmode should stand: postgres.js lets any key win, even undefined.
   const sql = postgres(url, {
     max: 1,
     prepare: false,
     connect_timeout: 15,
-    ssl: ssl === undefined && !LOCAL_HOSTS.has(new URL(url).hostname) ? "require" : ssl,
+    ...(ssl ? { ssl } : {}),
     onnotice: () => {},
   });
 

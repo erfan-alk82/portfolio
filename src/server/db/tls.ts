@@ -19,3 +19,13 @@ export function databaseSsl(url: string, production: boolean): "require" | undef
   }
   return mode ? undefined : "require";
 }
+
+/**
+ * The `ssl` part of the postgres.js options. The key is left out entirely when
+ * the URL should decide: postgres.js lets any `ssl` key win over the URL's
+ * sslmode, so passing `ssl: undefined` would silently turn TLS off.
+ */
+export function tlsOptions(url: string, production: boolean): { ssl?: "require" } {
+  const ssl = databaseSsl(url, production);
+  return ssl ? { ssl } : {};
+}
