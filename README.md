@@ -20,6 +20,7 @@ npm run test:integration  # blog database tests (needs TEST_DATABASE_URL, see be
 npm run db:migrate     # apply drizzle/ migrations to DATABASE_URL
 npm run db:generate    # write a new SQL migration after editing src/server/db/schema.ts
 npm run admin:hash-password  # print an ADMIN_PASSWORD_HASH
+npm run admin:unlock   # break-glass: clear all login throttling (uses DATABASE_URL)
 npm run og             # regenerate public/og/{fa,en}.png
 npm run cv:public      # regenerate the public CV PDF from ../erfan.yaml
 ```
@@ -60,28 +61,47 @@ npm run admin:hash-password     # type the password twice; it prints scrypt:17:8
 
 Put the printed value in `ADMIN_PASSWORD_HASH` (never the password itself), choose
 `ADMIN_USERNAME`, and set `SESSION_SECRET` to at least 32 random bytes
-(`openssl rand -base64 48`). Five wrong passwords from one IP lock that IP for 15 minutes;
-20 failures in an hour lock the login for an hour. Sessions last 8 hours.
+(`openssl rand -base64 48`). Sessions last 8 hours.
+
+**Sign-in protection.** Every attempt is counted before the password is checked, so
+parallel requests cannot slip past the limit, and at most two password checks run at once.
+- Five attempts from one IP within 15 minutes lock that IP for 15 minutes.
+- Across all IPs there is no lockout, only a soft brake: after 10 failures in an hour each sign-in waits a
+  little longer (250 ms per extra failure, at most 5 s), so nobody can lock the owner out.
+- The IP comes from `x-vercel-forwarded-for` on Vercel, and from the right-most `X-Forwarded-For` entry
+  behind your own proxy when `TRUST_PROXY=1`. Without either, only the soft brake applies.
+- Locked out anyway? Run `npm run admin:unlock` with the production `DATABASE_URL` (or, in Docker,
+  `docker compose run --rm migrate node scripts/unlock-admin.mjs`). It clears the counters only.
+- `/admin` without a session cookie answers a real 307 to the login page (the server-side session check
+  is still what protects every page and action). The login page names missing variables only outside
+  production; in production they go to the server log.
 
 ### Database on Vercel (Neon)
 
 1. Vercel → Project → Storage (or neon.tech): create a Postgres database and copy its
    **pooled** connection string (it ends in `?sslmode=require`).
 2. Vercel → Project → Settings → Environment Variables, for **Production**: `DATABASE_URL`,
-   `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `SESSION_SECRET`. For **Preview**, use a separate
-   database (a Neon branch) or leave `DATABASE_URL` unset.
+   `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `SESSION_SECRET`. For **Preview**, never reuse production
+   values: give previews their own Neon branch as `DATABASE_URL`, their own `SESSION_SECRET` and a different
+   admin password (hash), or leave them unset (the preview blog then shows its unavailable message).
 3. GitHub → Settings → Secrets → Actions: `DATABASE_URL` (the same production URL; the pipeline
    migrates it before each production deploy) and optionally `PREVIEW_DATABASE_URL`. Without
    these secrets deploys still succeed and only skip migrations, with a notice in the run.
 4. To migrate by hand: `DATABASE_URL=... npm run db:migrate`.
 
+In production the app and the scripts require TLS for any database host other than `localhost` and
+the Compose `db` service: without an `sslmode` in the URL they enforce `require`, and they refuse
+`sslmode=disable`.
+
 ### Database in Docker
 
 `docker compose up` starts `db` (PostgreSQL, data in the `db-data` volume, not exposed),
-then a one-shot `migrate` service, then `web`. Set `POSTGRES_PASSWORD`, `ADMIN_USERNAME`,
+then a one-shot `migrate` service, then `web`. Set `POSTGRES_PASSWORD` (use `openssl rand -hex 32`:
+base64 output can contain `/` and `+`, which break the connection URL), `ADMIN_USERNAME`,
 `ADMIN_PASSWORD_HASH` and `SESSION_SECRET` in `.env` (see `.env.example`). Behind a reverse
-proxy that overwrites `X-Forwarded-For`, also set `TRUST_PROXY=1` so login throttling counts
-per IP. Back up with `docker compose exec db pg_dump -U portfolio portfolio > backup.sql`.
+proxy on the same host, set `TRUST_PROXY=1` so login throttling counts per IP, and publish the app on
+loopback only (`127.0.0.1:${PORT:-3000}:3000` in `compose.yaml`, as its comment shows), so nobody can
+bypass the proxy and forge `X-Forwarded-For`. Back up with `docker compose exec db pg_dump -U portfolio portfolio > backup.sql`.
 To move from Neon, `pg_dump` the Neon database and restore it into the `db` service.
 
 ### Tests that need PostgreSQL
