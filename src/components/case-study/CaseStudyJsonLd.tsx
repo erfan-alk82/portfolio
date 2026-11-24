@@ -1,6 +1,9 @@
+import { getCopy } from "@/content";
 import type { Locale } from "@/i18n/config";
+import { personNode } from "@/lib/jsonld";
 import { plainText } from "@/lib/rich";
 import { siteUrl } from "@/lib/site";
+import { JsonLd } from "@/components/ui/JsonLd";
 
 type Props = {
   locale: Locale;
@@ -9,7 +12,10 @@ type Props = {
   summary: string;
 };
 
-/** schema.org CreativeWork authored by the same Person entity as the home page. */
+/**
+ * schema.org CreativeWork. The author is inlined with the home page Person's
+ * @id, so this page's structured data stands on its own.
+ */
 export function CaseStudyJsonLd({ locale, slug, title, summary }: Props) {
   const url = new URL(`/${locale}/case-studies/${slug}`, siteUrl).href;
   const data = {
@@ -19,15 +25,8 @@ export function CaseStudyJsonLd({ locale, slug, title, summary }: Props) {
     description: summary,
     url,
     inLanguage: locale,
-    author: { "@id": new URL("/#person", siteUrl).href },
+    author: personNode(siteUrl, locale, getCopy(locale).hero.name),
     image: new URL(`/og/${locale}.png`, siteUrl).href,
   };
-  // Escaping "<" keeps the JSON from ever closing the script element early.
-  const json = JSON.stringify(data).replace(/</g, "\\u003c");
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: json }}
-    />
-  );
+  return <JsonLd data={data} />;
 }

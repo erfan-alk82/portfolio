@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { buildRssFeed, escapeXml } from "@/lib/blog/rss";
+import { MAX_FEED_ITEMS, buildRssFeed, escapeXml } from "@/lib/blog/rss";
 
 describe("escapeXml", () => {
   test("escapes the five XML special characters", () => {
@@ -10,6 +10,11 @@ describe("escapeXml", () => {
 
   test("drops characters XML 1.0 cannot carry", () => {
     expect(escapeXml("a\u0000b\u0008c\u000Bd")).toBe("abcd");
+  });
+
+  test("drops lone surrogates but keeps real astral characters", () => {
+    const lone = String.fromCharCode(0xd83d);
+    expect(escapeXml(`a${lone}b😀`)).toBe("ab😀");
   });
 
   test("keeps Persian text and newlines", () => {
@@ -30,6 +35,14 @@ describe("buildRssFeed", () => {
         description: "First & only",
         url: "https://example.com/en/blog/first",
         publishedAt: "2026-11-01T10:00:00.000Z",
+        updatedAt: "2026-11-03T08:00:00.000Z",
+      },
+      {
+        title: "Older",
+        description: "Older post",
+        url: "https://example.com/en/blog/older",
+        publishedAt: "2026-10-01T10:00:00.000Z",
+        updatedAt: "2026-11-04T09:30:00.000Z",
       },
     ],
   });
@@ -47,10 +60,23 @@ describe("buildRssFeed", () => {
     expect(feed).not.toContain("<script>");
   });
 
-  test("uses RFC 822 dates and permalink guids", () => {
+  test("uses RFC 822 dates, the latest update as lastBuildDate, and permalink guids", () => {
     expect(feed).toContain("<pubDate>Sun, 01 Nov 2026 10:00:00 GMT</pubDate>");
-    expect(feed).toContain("<lastBuildDate>Sun, 01 Nov 2026 10:00:00 GMT</lastBuildDate>");
+    expect(feed).toContain("<lastBuildDate>Wed, 04 Nov 2026 09:30:00 GMT</lastBuildDate>");
     expect(feed).toContain('<guid isPermaLink="true">https://example.com/en/blog/first</guid>');
+  });
+
+  test("lists at most MAX_FEED_ITEMS items", () => {
+    const items = Array.from({ length: MAX_FEED_ITEMS + 5 }, (_, i) => ({
+      title: `Post ${i}`,
+      description: "d",
+      url: `https://example.com/en/blog/p${i}`,
+      publishedAt: "2026-11-01T10:00:00.000Z",
+      updatedAt: "2026-11-01T10:00:00.000Z",
+    }));
+    const big = buildRssFeed({ title: "t", description: "d", siteLink: "s", feedUrl: "f", language: "en", items });
+    expect(big.split("<item>").length - 1).toBe(MAX_FEED_ITEMS);
+    expect(MAX_FEED_ITEMS).toBe(50);
   });
 
   test("an empty feed is still valid", () => {

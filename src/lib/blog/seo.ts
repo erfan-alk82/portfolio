@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { locales, type Locale } from "@/i18n/config";
+import { personNode } from "@/lib/jsonld";
 import { plainText } from "@/lib/rich";
+import { truncateGraphemes } from "@/lib/text";
 
 /** A published translation as the public pages see it. Dates are ISO strings. */
 export interface PublicPost {
@@ -41,9 +43,11 @@ export function postAlternates(base: URL, slug: string, published: readonly Loca
 interface MetadataOptions {
   base: URL;
   siteName: string;
+  /** Title of the language's RSS feed, for a titled <link rel="alternate">. */
+  feedTitle: string;
 }
 
-export function buildPostMetadata(post: PublicPost, { base, siteName }: MetadataOptions): Metadata {
+export function buildPostMetadata(post: PublicPost, { base, siteName, feedTitle }: MetadataOptions): Metadata {
   const path = postPath(post.locale, post.slug);
   const title = `${plainText(post.title)} | ${siteName}`;
   const image = { url: `/og/${post.locale}.png`, width: 1200, height: 630, alt: title };
@@ -54,7 +58,7 @@ export function buildPostMetadata(post: PublicPost, { base, siteName }: Metadata
     alternates: {
       canonical: path,
       languages: postAlternates(base, post.slug, post.publishedLocales),
-      types: { "application/rss+xml": feedPath(post.locale) },
+      types: { "application/rss+xml": [{ url: feedPath(post.locale), title: feedTitle }] },
     },
     // A nested openGraph object replaces the layout's one entirely, so every field is restated.
     openGraph: {
@@ -80,28 +84,69 @@ export function buildPostMetadata(post: PublicPost, { base, siteName }: Metadata
   };
 }
 
-/** schema.org BlogPosting authored by the same Person entity as the home page. */
-export function blogPostingJsonLd(post: PublicPost, { base }: { base: URL }): Record<string, unknown> {
+/** schema.org allows long headlines, but Google only shows about 110 characters. */
+const HEADLINE_MAX = 110;
+
+export function blogId(base: URL, locale: Locale): string {
+  return new URL(`/${locale}/blog#blog`, base).href;
+}
+
+interface BlogPostingOptions {
+  base: URL;
+  /** The site owner's name in the post's language. */
+  authorName: string;
+  /** Name of the blog in the post's language (the feed title). */
+  blogName: string;
+}
+
+/**
+ * schema.org BlogPosting. Author, page and blog are inlined as small nodes
+ * (with the same @ids used elsewhere), so the page validates on its own.
+ */
+export function blogPostingJsonLd(post: PublicPost, { base, authorName, blogName }: BlogPostingOptions): Record<string, unknown> {
   const url = new URL(postPath(post.locale, post.slug), base).href;
-  const person = { "@id": new URL("/#person", base).href };
+  const person = personNode(base, post.locale, authorName);
   return {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
-    headline: plainText(post.title),
+    headline: truncateGraphemes(plainText(post.title), HEADLINE_MAX),
     description: post.description,
     inLanguage: post.locale,
     url,
-    mainEntityOfPage: url,
+    mainEntityOfPage: { "@type": "WebPage", "@id": url },
     datePublished: post.publishedAt,
     dateModified: post.updatedAt,
     author: person,
     publisher: person,
     image: new URL(`/og/${post.locale}.png`, base).href,
-    isPartOf: { "@type": "Blog", "@id": new URL(`/${post.locale}/blog#blog`, base).href },
+    isPartOf: {
+      "@type": "Blog",
+      "@id": blogId(base, post.locale),
+      name: blogName,
+      url: new URL(`/${post.locale}/blog`, base).href,
+      inLanguage: post.locale,
+    },
   };
 }
 
-/** JSON for an inline <script>: escaping "<" means the data can never close the element. */
-export function serializeJsonLd(data: unknown): string {
-  return JSON.stringify(data).replace(/</g, "\\u003c");
+interface BlogOptions {
+  base: URL;
+  locale: Locale;
+  name: string;
+  description: string;
+  authorName: string;
+}
+
+/** The Blog node itself, on the blog index; posts refer to it by the same @id. */
+export function blogJsonLd({ base, locale, name, description, authorName }: BlogOptions): Record<string, unknown> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    "@id": blogId(base, locale),
+    name,
+    description,
+    url: new URL(`/${locale}/blog`, base).href,
+    inLanguage: locale,
+    author: personNode(base, locale, authorName),
+  };
 }

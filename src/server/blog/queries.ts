@@ -3,7 +3,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { connection } from "next/server";
 import type { Locale } from "@/i18n/config";
-import { SLUG_PATTERN, SLUG_MAX_LENGTH } from "@/lib/blog/schemas";
+import { isValidSlug } from "@/lib/blog/slug";
 import type { PublicPost } from "@/lib/blog/seo";
 import { isDatabaseConfigured } from "../db/client";
 import { findPublishedPost, listPublishedTranslations } from "./repository";
@@ -14,8 +14,9 @@ import { POSTS_TAG, postTag } from "./tags";
  * (connection()), so nothing touches the database at build time, then reads
  * through a remote cache that Server Actions expire with updateTag.
  *
- * Failures never break a page: without DATABASE_URL, or when the database is
- * unreachable, lists come back "unavailable" and posts as missing.
+ * Results keep three cases apart: data, "unconfigured" (DATABASE_URL is
+ * intentionally unset: there is no blog) and "unavailable" (the database is
+ * failing right now). Callers degrade differently for each.
  */
 
 export interface PublishedListItem {
@@ -27,7 +28,15 @@ export interface PublishedListItem {
   updatedAt: string;
 }
 
-export type PublishedList = { status: "ok"; items: PublishedListItem[] } | { status: "unavailable"; items: [] };
+export type PublishedList =
+  | { status: "ok"; items: PublishedListItem[] }
+  | { status: "unconfigured"; items: [] }
+  | { status: "unavailable"; items: [] };
+
+export type PublishedPostResult =
+  | { status: "ok"; post: PublicPost }
+  | { status: "missing" }
+  | { status: "unavailable" };
 
 async function cachedPublishedList(): Promise<PublishedListItem[]> {
   "use cache: remote";
@@ -44,9 +53,11 @@ async function cachedPublishedList(): Promise<PublishedListItem[]> {
 
 async function cachedPublishedPost(slug: string, locale: Locale): Promise<PublicPost | null> {
   "use cache: remote";
-  cacheLife("max");
   cacheTag(POSTS_TAG, postTag(slug));
   const post = await findPublishedPost(slug, locale);
+  // Misses are kept briefly (and expire on any save anyway), so guessed URLs do not pile up for long.
+  if (post) cacheLife("max");
+  else cacheLife("minutes");
   if (!post) return null;
   return {
     slug: post.slug,
@@ -67,7 +78,7 @@ function logFailure(what: string, error: unknown): void {
 /** Every published translation in both languages, newest first. */
 export async function listPublished(): Promise<PublishedList> {
   await connection();
-  if (!isDatabaseConfigured()) return { status: "unavailable", items: [] };
+  if (!isDatabaseConfigured()) return { status: "unconfigured", items: [] };
   try {
     return { status: "ok", items: await cachedPublishedList() };
   } catch (error) {
@@ -77,16 +88,18 @@ export async function listPublished(): Promise<PublishedList> {
   }
 }
 
-export async function getPublishedPost(slug: string, locale: Locale): Promise<PublicPost | null> {
+export async function getPublishedPost(slug: string, locale: Locale): Promise<PublishedPostResult> {
   await connection();
-  // Anything that cannot be a slug is a 404 without a query or a cache entry.
-  if (slug.length > SLUG_MAX_LENGTH || !SLUG_PATTERN.test(slug)) return null;
-  if (!isDatabaseConfigured()) return null;
+  // Anything that cannot be a slug is missing without a query or a cache entry.
+  if (!isValidSlug(slug)) return { status: "missing" };
+  // No database configured means there is no blog, so every post is simply missing.
+  if (!isDatabaseConfigured()) return { status: "missing" };
   try {
-    return await cachedPublishedPost(slug, locale);
+    const post = await cachedPublishedPost(slug, locale);
+    return post ? { status: "ok", post } : { status: "missing" };
   } catch (error) {
     unstable_rethrow(error);
     logFailure(`reading post "${slug}"`, error);
-    return null;
+    return { status: "unavailable" };
   }
 }

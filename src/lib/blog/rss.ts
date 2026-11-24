@@ -6,7 +6,12 @@ export interface FeedItem {
   url: string;
   /** ISO 8601 */
   publishedAt: string;
+  /** ISO 8601; the feed's lastBuildDate is the latest of these. */
+  updatedAt: string;
 }
+
+/** Readers only need the recent posts; older ones stay in the sitemap. */
+export const MAX_FEED_ITEMS = 50;
 
 export interface FeedOptions {
   title: string;
@@ -28,9 +33,15 @@ const XML_ESCAPES: Record<string, string> = {
   "'": "&apos;",
 };
 
-/** XML 1.0 forbids control characters other than tab, LF and CR, and the noncharacters U+FFFE/U+FFFF. */
+/**
+ * XML 1.0 forbids control characters other than tab, LF and CR, the
+ * noncharacters U+FFFE/U+FFFF, and lone UTF-16 surrogates (iterating by code
+ * point yields a lone surrogate as its own 0xD800–0xDFFF "character").
+ */
 function isInvalidXmlChar(code: number): boolean {
-  return (code < 0x20 && code !== 0x09 && code !== 0x0a && code !== 0x0d) || code === 0xfffe || code === 0xffff;
+  const control = code < 0x20 && code !== 0x09 && code !== 0x0a && code !== 0x0d;
+  const loneSurrogate = code >= 0xd800 && code <= 0xdfff;
+  return control || loneSurrogate || code === 0xfffe || code === 0xffff;
 }
 
 export function escapeXml(value: string): string {
@@ -51,7 +62,8 @@ function element(name: string, value: string): string {
 }
 
 export function buildRssFeed(options: FeedOptions): string {
-  const items = options.items.map((item) =>
+  const listed = options.items.slice(0, MAX_FEED_ITEMS);
+  const items = listed.map((item) =>
     [
       "<item>",
       element("title", item.title),
@@ -62,7 +74,10 @@ export function buildRssFeed(options: FeedOptions): string {
       "</item>",
     ].join(""),
   );
-  const latest = options.items[0];
+  const lastUpdate = listed.reduce<string | null>(
+    (latest, item) => (latest === null || item.updatedAt > latest ? item.updatedAt : latest),
+    null,
+  );
 
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
@@ -73,7 +88,7 @@ export function buildRssFeed(options: FeedOptions): string {
     element("description", options.description),
     element("language", options.language),
     `<atom:link href="${escapeXml(options.feedUrl)}" rel="self" type="application/rss+xml"/>`,
-    latest ? element("lastBuildDate", rfc822(latest.publishedAt)) : "",
+    lastUpdate ? element("lastBuildDate", rfc822(lastUpdate)) : "",
     ...items,
     "</channel>",
     "</rss>",

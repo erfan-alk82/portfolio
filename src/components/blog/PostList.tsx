@@ -20,7 +20,7 @@ export async function PostList({ locale, copy }: Props) {
   if (items.length === 0) {
     return (
       <p className="measure border-s-2 border-contour ps-4 text-lg text-ink-soft" role="status">
-        <Rich text={list.status === "ok" ? copy.blog.empty : copy.blog.unavailable} />
+        <Rich text={list.status === "unavailable" ? copy.blog.unavailable : copy.blog.empty} />
       </p>
     );
   }

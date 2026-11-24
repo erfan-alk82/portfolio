@@ -303,6 +303,7 @@ export const en = {
     listLabel: "Articles",
     empty: "No articles have been published in English yet. Check back soon.",
     unavailable: "The articles cannot be loaded right now. Please try again in a few minutes.",
+    postUnavailable: "This article cannot be loaded right now. Please try again in a few minutes.",
     readMore: "Read the article",
     published: "Published",
     updated: "Updated",

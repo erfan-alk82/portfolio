@@ -37,6 +37,7 @@ function persianRichStrings(): string[] {
     fa.blog.rss,
     fa.blog.empty,
     fa.blog.unavailable,
+    fa.blog.postUnavailable,
   ];
 }
 

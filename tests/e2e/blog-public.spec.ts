@@ -63,10 +63,21 @@ for (const locale of LOCALES) {
   });
 }
 
-test("an unknown post renders the 404 page and is not indexed", async ({ page }) => {
-  await page.goto("/en/blog/this-post-does-not-exist");
+test("a well-formed but unknown post renders the 404 page, marked noindex", async ({ page }) => {
+  const response = await page.goto("/en/blog/this-post-does-not-exist");
+  // The post streams after the static shell, so the status is already sent (200); Next marks the page noindex.
+  expect(response?.status()).toBe(200);
   await expect(page.getByRole("heading", { name: "This page isn't on the map" })).toBeVisible();
   await expect(page.locator('meta[name="robots"]').first()).toHaveAttribute("content", /noindex/);
+});
+
+test.describe("malformed blog URLs get a real 404 without touching the database", () => {
+  for (const path of ["/en/blog/Not_A_Slug", "/fa/blog/two--dashes", "/en/blog/a/b", `/en/blog/${"a".repeat(81)}`]) {
+    test(path.length > 40 ? "an over-long slug" : path, async ({ request }) => {
+      const response = await request.get(path);
+      expect(response.status()).toBe(404);
+    });
+  }
 });
 
 test("the sitemap lists the blog index in both languages, and robots.txt hides the admin", async ({ request }) => {
@@ -75,5 +86,6 @@ test("the sitemap lists the blog index in both languages, and robots.txt hides t
   expect(sitemap).toMatch(/\/en\/blog<\/loc>/);
   expect(sitemap).toMatch(/\/fa<\/loc>/);
   const robots = await (await request.get("/robots.txt")).text();
-  expect(robots).toContain("Disallow: /admin");
+  expect(robots).toContain("Disallow: /admin/");
+  expect(robots).toMatch(new RegExp("^Disallow: /admin$", "m"));
 });

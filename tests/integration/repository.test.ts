@@ -74,6 +74,20 @@ describe("blog repository", () => {
     await expect(updatePost(post.id, input("removal", { en }))).rejects.toBeInstanceOf(PublishedTranslationRemovalError);
   });
 
+  test("a translation's updated_at moves only with its own content (it is the sitemap's lastModified)", async () => {
+    const post = await createPost(input("isolated", { fa, en }));
+    const enBefore = (await getPostById(post.id))!.translations.find((t) => t.locale === "en")!.updatedAt;
+
+    await setTranslationStatus(post.id, "fa", "published");
+    await setTranslationStatus(post.id, "fa", "draft");
+    await update(post.id, input("isolated", { fa: { ...fa, bodyMd: "Persian edit" }, en }));
+    await setTranslationStatus(post.id, "en", "published");
+
+    const after = (await getPostById(post.id))!;
+    expect(after.translations.find((t) => t.locale === "en")!.updatedAt).toEqual(enBefore);
+    expect(after.translations.find((t) => t.locale === "fa")!.updatedAt.getTime()).toBeGreaterThan(enBefore.getTime());
+  });
+
   test("publishing sets the date once; unpublishing and republishing keep it", async () => {
     const post = await createPost(input("dates", { en }));
     const published = await setTranslationStatus(post.id, "en", "published");

@@ -12,6 +12,13 @@ export async function GET(_request: Request, { params }: RouteContext<"/[locale]
   if (!isLocale(locale)) return new Response("Not found", { status: 404 });
   const copy = getCopy(locale);
   const list = await listPublished();
+  // A failing database must not look like "no posts" to feed readers.
+  if (list.status === "unavailable") {
+    return new Response("The feed is temporarily unavailable.", {
+      status: 503,
+      headers: { "Retry-After": "300", "Content-Type": "text/plain; charset=utf-8" },
+    });
+  }
   const items = list.items
     .filter((item) => item.locale === locale)
     .map((item) => ({
@@ -19,6 +26,7 @@ export async function GET(_request: Request, { params }: RouteContext<"/[locale]
       description: item.description,
       url: new URL(postPath(locale, item.slug), siteUrl).href,
       publishedAt: item.publishedAt,
+      updatedAt: item.updatedAt,
     }));
 
   const xml = buildRssFeed({

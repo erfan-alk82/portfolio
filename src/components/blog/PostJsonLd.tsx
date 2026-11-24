@@ -1,17 +1,18 @@
-import { blogPostingJsonLd, serializeJsonLd, type PublicPost } from "@/lib/blog/seo";
+import { getCopy } from "@/content";
+import { blogPostingJsonLd, type PublicPost } from "@/lib/blog/seo";
 import { siteUrl } from "@/lib/site";
+import { JsonLd } from "@/components/ui/JsonLd";
 
 type Props = {
   post: PublicPost;
 };
 
-/** schema.org BlogPosting; the author is the Person entity from the home page. */
+/** schema.org BlogPosting with the author and blog inlined in the post's language. */
 export function PostJsonLd({ post }: Props) {
+  const copy = getCopy(post.locale);
   return (
-    <script
-      type="application/ld+json"
-      // Escaped by serializeJsonLd: "<" cannot appear, so the script cannot be closed early.
-      dangerouslySetInnerHTML={{ __html: serializeJsonLd(blogPostingJsonLd(post, { base: siteUrl })) }}
+    <JsonLd
+      data={blogPostingJsonLd(post, { base: siteUrl, authorName: copy.hero.name, blogName: copy.blog.feedTitle })}
     />
   );
 }

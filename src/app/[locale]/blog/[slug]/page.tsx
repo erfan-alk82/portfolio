@@ -22,14 +22,19 @@ type Params = PageProps<"/[locale]/blog/[slug]">["params"];
 /**
  * Per-post SEO: title, description, canonical, hreflang for published
  * languages only, Open Graph article dates. Unknown or unpublished slugs
- * render the 404 page, which Next marks noindex.
+ * render the 404 page, which Next marks noindex. While the database is
+ * failing the page says so instead, and is not marked noindex, so an outage
+ * never tells crawlers to drop a real post.
  */
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { locale, slug } = await params;
   if (!isLocale(locale)) return {};
-  const post = await getPublishedPost(slug, locale);
-  if (!post) return { robots: { index: false, follow: true } };
-  return buildPostMetadata(post, { base: siteUrl, siteName: getCopy(locale).meta.siteName });
+  const result = await getPublishedPost(slug, locale);
+  const copy = getCopy(locale);
+  if (result.status === "unavailable") return { title: copy.blog.metaTitle };
+  if (result.status === "missing") return { robots: { index: false, follow: true } };
+  const { post } = result;
+  return buildPostMetadata(post, { base: siteUrl, siteName: copy.meta.siteName, feedTitle: copy.blog.feedTitle });
 }
 
 const container = "mx-auto max-w-[90rem] px-5 pt-10 pb-20 sm:px-8 lg:px-12 lg:pt-16 lg:pb-28";
@@ -43,12 +48,25 @@ function BackLink({ locale, copy }: { locale: Locale; copy: SiteCopy }) {
   );
 }
 
+function PostUnavailable({ locale, copy }: { locale: Locale; copy: SiteCopy }) {
+  return (
+    <div className={container}>
+      <BackLink locale={locale} copy={copy} />
+      <p role="status" className="measure mt-10 border-s-2 border-contour ps-4 text-lg text-ink">
+        <Rich text={copy.blog.postUnavailable} />
+      </p>
+    </div>
+  );
+}
+
 async function PostView({ params }: { params: Params }) {
   const { locale, slug } = await params;
   if (!isLocale(locale)) notFound();
-  const post = await getPublishedPost(slug, locale);
-  if (!post) notFound();
+  const result = await getPublishedPost(slug, locale);
   const copy = getCopy(locale);
+  if (result.status === "missing") notFound();
+  if (result.status === "unavailable") return <PostUnavailable locale={locale} copy={copy} />;
+  const { post } = result;
   const other = post.publishedLocales.find((l) => l !== locale);
 
   return (

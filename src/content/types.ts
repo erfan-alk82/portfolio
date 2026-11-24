@@ -156,6 +156,8 @@ export interface BlogCopy {
   empty: Rich;
   /** Shown when the database cannot be reached; the rest of the site keeps working. */
   unavailable: Rich;
+  /** A single post that cannot be loaded because the database is failing (not a 404). */
+  postUnavailable: Rich;
   readMore: string;
   published: string;
   updated: string;

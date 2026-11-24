@@ -3,12 +3,13 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getCopy } from "@/content";
 import { isLocale, locales, type Locale } from "@/i18n/config";
-import { OPEN_GRAPH_LOCALE, feedPath } from "@/lib/blog/seo";
+import { OPEN_GRAPH_LOCALE, blogJsonLd, feedPath } from "@/lib/blog/seo";
 import { languageAlternates, siteUrl } from "@/lib/site";
 import { PostList, PostListSkeleton } from "@/components/blog/PostList";
 import { RssLink } from "@/components/blog/RssLink";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
+import { JsonLd } from "@/components/ui/JsonLd";
 import { Rich } from "@/components/ui/Rich";
 
 const PATH = "/blog";
@@ -25,7 +26,7 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/blog">):
     alternates: {
       canonical: `/${locale}${PATH}`,
       languages: languageAlternates(siteUrl, PATH),
-      types: { "application/rss+xml": feedPath(locale) },
+      types: { "application/rss+xml": [{ url: feedPath(locale), title: copy.blog.feedTitle }] },
     },
     openGraph: {
       type: "website",
@@ -76,6 +77,15 @@ export default async function BlogIndexPage({ params }: PageProps<"/[locale]/blo
         </div>
       </main>
       <SiteFooter copy={copy} />
+      <JsonLd
+        data={blogJsonLd({
+          base: siteUrl,
+          locale,
+          name: copy.blog.feedTitle,
+          description: copy.blog.description,
+          authorName: copy.hero.name,
+        })}
+      />
     </>
   );
 }
