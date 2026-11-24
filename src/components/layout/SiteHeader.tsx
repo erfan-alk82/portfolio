@@ -54,10 +54,10 @@ export function SiteHeader({ locale, copy, path = "" }: SiteHeaderProps) {
       >
         {copy.nav.skip}
       </a>
-      <div className="mx-auto flex h-16 max-w-[90rem] items-center justify-between gap-6 px-5 sm:px-8 lg:px-12">
+      <div className="mx-auto flex h-16 max-w-[90rem] items-center justify-between gap-3 px-4 sm:gap-6 sm:px-8 lg:px-12">
         <a
           href="#top"
-          className="display text-lg font-extrabold whitespace-nowrap text-ink"
+          className="display text-base font-extrabold whitespace-nowrap text-ink sm:text-lg"
         >
           {copy.hero.name}
         </a>
