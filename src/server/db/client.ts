@@ -1,8 +1,9 @@
 import "server-only";
 import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { databaseUrl } from "../env";
+import { databaseUrl, isProduction } from "../env";
 import * as schema from "./schema";
+import { databaseSsl } from "./tls";
 
 /**
  * One connection pool per process, created on first use. It lives on
@@ -46,6 +47,8 @@ export function getDb(): Database {
     max: poolSize(),
     // Neon's pooler (PgBouncer, transaction mode) cannot keep named prepared statements.
     prepare: false,
+    // TLS is mandatory for remote databases in production (see tls.ts).
+    ssl: databaseSsl(url, isProduction()),
     idle_timeout: 20,
     connect_timeout: 10,
     onnotice: () => {},

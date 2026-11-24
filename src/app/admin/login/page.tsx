@@ -3,14 +3,25 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { LoginForm } from "@/components/admin/LoginForm";
-import { getAdminSession } from "@/server/auth/dal";
+import { getAdminAccess } from "@/server/auth/dal";
 import { isDatabaseConfigured } from "@/server/db/client";
-import { authConfig } from "@/server/env";
+import { authConfig, isProduction } from "@/server/env";
 
 export const metadata: Metadata = { title: "Sign in" };
 
-/** Says which variables are missing (names only, never values), so a fresh deploy is easy to finish. */
+/**
+ * Outside production it names the missing variables (names only, never values),
+ * so a fresh setup is easy to finish. In production visitors only learn that
+ * sign-in is unavailable; the names go to the server log.
+ */
 function NotConfigured({ problems }: { problems: string[] }) {
+  if (isProduction()) {
+    return (
+      <p role="status" className="border-s-2 border-contour ps-4 text-ink">
+        Signing in is not available right now.
+      </p>
+    );
+  }
   return (
     <div role="status" className="flex flex-col gap-3 border-s-2 border-contour ps-4 text-ink-soft">
       <p className="font-semibold text-ink">The admin is not configured on this server.</p>
@@ -32,9 +43,22 @@ async function LoginGate() {
   await connection();
   const auth = authConfig();
   const problems = [...(isDatabaseConfigured() ? [] : ["DATABASE_URL"]), ...(auth.ok ? [] : auth.problems)];
-  if (problems.length > 0) return <NotConfigured problems={problems} />;
-  if (await getAdminSession()) redirect("/admin");
-  return <LoginForm />;
+  if (problems.length > 0) {
+    console.error(`[admin] sign-in disabled; missing or invalid: ${problems.join(", ")}`);
+    return <NotConfigured problems={problems} />;
+  }
+  const access = await getAdminAccess();
+  if (access.status === "signed-in") redirect("/admin");
+  return (
+    <>
+      {access.status === "unavailable" ? (
+        <p role="status" className="border-s-2 border-contour ps-4 text-ink">
+          The database cannot be reached right now, so signing in may fail. Try again in a few minutes.
+        </p>
+      ) : null}
+      <LoginForm />
+    </>
+  );
 }
 
 export default function LoginPage() {

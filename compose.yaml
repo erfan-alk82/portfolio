@@ -55,6 +55,9 @@ services:
       args:
         SITE_URL: ${SITE_URL:?Set SITE_URL to the public origin, e.g. https://example.com}
     image: erfan-portfolio:latest
+    # Behind a reverse proxy on the same host (with TRUST_PROXY=1), publish on loopback only,
+    # so nobody can reach the app directly and forge X-Forwarded-For:
+    #   - "127.0.0.1:${PORT:-3000}:3000"
     ports:
       - "${PORT:-3000}:3000"
     restart: unless-stopped

@@ -5,8 +5,8 @@ import { redirect, unstable_rethrow } from "next/navigation";
 import { loginSchema } from "@/lib/blog/schemas";
 import { clientIp, throttleKeys } from "@/server/auth/client-ip";
 import { verifyPassword } from "@/server/auth/password";
+import { attemptLogin } from "@/server/auth/login";
 import { startAdminSession } from "@/server/auth/session";
-import { clearFailures, lockedUntil, recordFailures } from "@/server/auth/throttle";
 import { safeEqual } from "@/server/auth/token";
 import { isDatabaseConfigured } from "@/server/db/client";
 import { authConfig } from "@/server/env";
@@ -36,15 +36,13 @@ export async function login(_previous: LoginState, formData: FormData): Promise<
   const keys = throttleKeys(clientIp(requestHeaders, proxyEnv), config.sessionSecret);
 
   try {
-    if (await lockedUntil(keys)) return { error: LOCKED, username };
-    // scrypt always runs, whether or not the username matches, so timing does not reveal it.
-    const passwordMatches = await verifyPassword(parsed.data.password, config.passwordHash);
-    const usernameMatches = safeEqual(parsed.data.username, config.username);
-    if (!passwordMatches || !usernameMatches) {
-      await recordFailures(keys);
-      return { error: INVALID, username };
-    }
-    await clearFailures(keys);
+    const outcome = await attemptLogin(keys, async () => {
+      // scrypt always runs, whether or not the username matches, so timing does not reveal it.
+      const passwordMatches = await verifyPassword(parsed.data.password, config.passwordHash);
+      return safeEqual(parsed.data.username, config.username) && passwordMatches;
+    });
+    if (outcome === "locked") return { error: LOCKED, username };
+    if (outcome === "invalid") return { error: INVALID, username };
     await startAdminSession(config.sessionSecret, requestHeaders.get("user-agent"));
   } catch (error) {
     unstable_rethrow(error);

@@ -2,7 +2,7 @@ import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
 import { LogOut } from "lucide-react";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
-import { requireAdmin } from "@/server/auth/dal";
+import { AdminUnavailableError, requireAdmin } from "@/server/auth/dal";
 import { logout } from "../actions";
 
 /**
@@ -11,8 +11,26 @@ import { logout } from "../actions";
  * the layout; pages and actions check again on their own.
  */
 async function SignedIn({ children }: { children: ReactNode }) {
-  await requireAdmin();
+  try {
+    await requireAdmin();
+  } catch (error) {
+    // A database or configuration outage is not a signed-out visitor: say so instead of bouncing to login.
+    if (error instanceof AdminUnavailableError) return <Unavailable />;
+    throw error;
+  }
   return <>{children}</>;
+}
+
+function Unavailable() {
+  return (
+    <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-12 sm:px-8">
+      <h1 className="display text-section font-extrabold text-ink">Admin unavailable</h1>
+      <p role="alert" className="measure border-s-2 border-signal ps-4 text-ink">
+        The database cannot be reached right now, so nothing can be read or saved. The public site keeps working.
+        Try again in a few minutes.
+      </p>
+    </div>
+  );
 }
 
 function DashboardSkeleton() {

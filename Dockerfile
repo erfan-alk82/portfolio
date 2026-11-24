@@ -24,7 +24,7 @@ COPY package.json package-lock.json ./
 COPY --from=deps /app/node_modules ./node_modules
 RUN npm prune --omit=dev --no-audit --no-fund
 COPY drizzle ./drizzle
-COPY scripts/migrate.mjs ./scripts/migrate.mjs
+COPY scripts/migrate.mjs scripts/unlock-admin.mjs scripts/db-connect.mjs ./scripts/
 USER node
 CMD ["node", "scripts/migrate.mjs"]
 

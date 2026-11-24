@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { clientIp, throttleKeys } from "@/server/auth/client-ip";
-import { createSessionToken, hashSessionToken, readSessionToken, safeEqual } from "@/server/auth/token";
+import { createSessionToken, deriveKey, hashSessionToken, readSessionToken, safeEqual } from "@/server/auth/token";
 
 const secret = "a-test-secret-that-is-at-least-32-bytes-long";
 
@@ -41,31 +41,57 @@ describe("session tokens", () => {
   });
 });
 
-describe("client IP and throttle keys", () => {
-  const headers = new Headers({ "x-forwarded-for": "203.0.113.7, 10.0.0.1" });
-
-  test("trusts x-forwarded-for on Vercel", () => {
+describe("client IP", () => {
+  test("on Vercel, trusts only the platform-set headers", () => {
+    const headers = new Headers({
+      "x-forwarded-for": "6.6.6.6, 203.0.113.7",
+      "x-vercel-forwarded-for": "203.0.113.7",
+      "x-real-ip": "198.51.100.1",
+    });
     expect(clientIp(headers, { VERCEL: "1" })).toBe("203.0.113.7");
+    expect(clientIp(new Headers({ "x-real-ip": "198.51.100.1" }), { VERCEL: "1" })).toBe("198.51.100.1");
   });
 
-  test("trusts x-forwarded-for behind a proxy only when TRUST_PROXY=1", () => {
+  test("on Vercel, a client-supplied X-Forwarded-For alone is ignored", () => {
+    expect(clientIp(new Headers({ "x-forwarded-for": "6.6.6.6" }), { VERCEL: "1" })).toBeNull();
+  });
+
+  test("behind a trusted proxy, takes the right-most X-Forwarded-For entry (added by that proxy)", () => {
+    const headers = new Headers({ "x-forwarded-for": "6.6.6.6, 10.0.0.9, 203.0.113.7" });
     expect(clientIp(headers, { TRUST_PROXY: "1" })).toBe("203.0.113.7");
+    expect(clientIp(new Headers({ "x-forwarded-for": "2001:db8::1 " }), { TRUST_PROXY: "1" })).toBe("2001:db8::1");
+  });
+
+  test("without a trusted proxy, headers are ignored", () => {
+    const headers = new Headers({ "x-forwarded-for": "203.0.113.7", "x-real-ip": "203.0.113.7" });
     expect(clientIp(headers, {})).toBeNull();
     expect(clientIp(headers, { TRUST_PROXY: "true" })).toBeNull();
   });
 
-  test("an empty header yields no IP", () => {
-    expect(clientIp(new Headers({ "x-forwarded-for": " , " }), { VERCEL: "1" })).toBeNull();
-    expect(clientIp(new Headers(), { VERCEL: "1" })).toBeNull();
+  test.each(["", " , ", "not-an-ip", "999.1.1.1", "203.0.113.7, garbage"])("rejects %j", (value) => {
+    expect(clientIp(new Headers({ "x-forwarded-for": value }), { TRUST_PROXY: "1" })).toBeNull();
   });
+});
 
-  test("keys hash the IP and always include the global key", () => {
+describe("throttle keys", () => {
+  test("hash the IP with an IP-specific key and always include the global key", () => {
     const keys = throttleKeys("203.0.113.7", secret);
     expect(keys.map((k) => k.kind)).toEqual(["ip", "global"]);
     expect(keys[0].key).toMatch(/^ip:[A-Za-z0-9_-]{43}$/);
     expect(keys[0].key).not.toContain("203.0.113.7");
     expect(throttleKeys("203.0.113.7", secret)[0].key).toBe(keys[0].key);
     expect(throttleKeys(null, secret)).toEqual([{ kind: "global", key: "global" }]);
+  });
+});
+
+describe("deriveKey", () => {
+  test("gives a different 32-byte key per purpose, stable per secret", () => {
+    const cookie = deriveKey(secret, "session-cookie");
+    const ip = deriveKey(secret, "throttle-ip");
+    expect(cookie).toHaveLength(32);
+    expect(cookie.equals(ip)).toBe(false);
+    expect(deriveKey(secret, "session-cookie").equals(cookie)).toBe(true);
+    expect(deriveKey(`${secret}x`, "session-cookie").equals(cookie)).toBe(false);
   });
 });
 

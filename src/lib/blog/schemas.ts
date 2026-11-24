@@ -7,8 +7,9 @@ import { locales, type Locale } from "@/i18n/config";
  */
 
 /** One ASCII slug is shared by both languages: lowercase words joined by single hyphens. */
-export const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-export const SLUG_MAX_LENGTH = 80;
+import { SLUG_MAX_LENGTH, SLUG_PATTERN } from "./slug";
+
+export { SLUG_MAX_LENGTH, SLUG_PATTERN };
 export const TITLE_MAX_LENGTH = 120;
 export const DESCRIPTION_MAX_LENGTH = 200;
 export const BODY_MAX_LENGTH = 200_000;

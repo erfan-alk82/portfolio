@@ -17,6 +17,8 @@ vitest.config.mts
 scripts
 # ...except the migration runner, used by the "migrate" target.
 !scripts/migrate.mjs
+!scripts/unlock-admin.mjs
+!scripts/db-connect.mjs
 
 # Repository and editor noise.
 .git

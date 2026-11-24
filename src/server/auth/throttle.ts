@@ -1,66 +1,82 @@
 import "server-only";
-import { and, gt, inArray, sql } from "drizzle-orm";
+import { inArray, sql, type SQL } from "drizzle-orm";
 import { getDb } from "../db/client";
 import { authThrottle } from "../db/schema";
-import type { ThrottleKey, ThrottleKind } from "./client-ip";
+import { BRAKE } from "./brake";
+import type { ThrottleKey } from "./client-ip";
 
 /**
- * Failed-login limits. Per IP: 5 failures in 15 minutes lock that IP for 15
- * minutes. Globally: 20 failures in an hour lock the login for an hour, which
- * caps guessing from many IPs (at the cost that a sustained attack also locks
- * the owner out for that hour).
+ * Per-IP lock: 5 attempts in 15 minutes, then that IP is turned away for 15
+ * minutes. There is deliberately no global lock (it would let anyone lock the
+ * owner out); the global row only feeds the soft brake in brake.ts.
+ *
+ * Attempts are counted BEFORE the password is checked (and un-counted on
+ * success), in one atomic upsert per key, so parallel requests cannot slip
+ * past the limit between "check" and "record".
  */
-export const THROTTLE_RULES: Record<ThrottleKind, { maxFailures: number; windowMs: number; lockMs: number }> = {
+export const THROTTLE_RULES = {
   ip: { maxFailures: 5, windowMs: 15 * 60 * 1000, lockMs: 15 * 60 * 1000 },
-  global: { maxFailures: 20, windowMs: 60 * 60 * 1000, lockMs: 60 * 60 * 1000 },
-};
+} as const;
 
-const interval = (ms: number) => sql`make_interval(secs => ${ms / 1000}::double precision)`;
+const interval = (ms: number): SQL => sql`make_interval(secs => ${ms / 1000}::double precision)`;
 
-/** The latest lock among the given keys, or null when none is locked now. */
-export async function lockedUntil(keys: readonly ThrottleKey[]): Promise<Date | null> {
-  if (keys.length === 0) return null;
-  const rows = await getDb()
-    .select({ lockedUntil: authThrottle.lockedUntil })
-    .from(authThrottle)
-    .where(and(inArray(authThrottle.key, keys.map((k) => k.key)), gt(authThrottle.lockedUntil, sql`now()`)));
-  const times = rows.flatMap((row) => (row.lockedUntil ? [row.lockedUntil.getTime()] : []));
-  return times.length > 0 ? new Date(Math.max(...times)) : null;
-}
-
-/**
- * One atomic upsert per key: concurrent failures cannot overwrite each other's
- * count, so parallel guessing is counted exactly.
- */
-async function recordFailure({ kind, key }: ThrottleKey): Promise<{ failures: number; lockedUntil: Date | null }> {
-  const rule = THROTTLE_RULES[kind];
-  const expired = sql`auth_throttle.window_started_at <= now() - ${interval(rule.windowMs)}`;
-  const nextCount = sql`case when ${expired} then 1 else auth_throttle.failures + 1 end`;
-  const rows = await getDb().execute<{ failures: number; locked_until: Date | string | null }>(sql`
+async function countAttempt({ kind, key }: ThrottleKey): Promise<number> {
+  const windowMs = kind === "ip" ? THROTTLE_RULES.ip.windowMs : BRAKE.windowMs;
+  // A window restarts only once it has passed and no lock is running.
+  const reset = sql`(auth_throttle.window_started_at <= now() - ${interval(windowMs)} and (auth_throttle.locked_until is null or auth_throttle.locked_until <= now()))`;
+  const next = sql`case when ${reset} then 1 else auth_throttle.failures + 1 end`;
+  const lock =
+    kind === "ip"
+      ? sql`case when ${next} = ${THROTTLE_RULES.ip.maxFailures} then now() + ${interval(THROTTLE_RULES.ip.lockMs)} when ${reset} then null else auth_throttle.locked_until end`
+      : sql`null`;
+  const rows = await getDb().execute<{ failures: number }>(sql`
     insert into auth_throttle (key, failures, window_started_at, locked_until)
-    values (${key}, 1, now(), case when 1 >= ${rule.maxFailures} then now() + ${interval(rule.lockMs)} end)
+    values (${key}, 1, now(), null)
     on conflict (key) do update set
-      failures = ${nextCount},
-      window_started_at = case when ${expired} then now() else auth_throttle.window_started_at end,
-      locked_until = case
-        when ${nextCount} >= ${rule.maxFailures} then now() + ${interval(rule.lockMs)}
-        else auth_throttle.locked_until
-      end
-    returning failures, locked_until
+      failures = ${next},
+      window_started_at = case when ${reset} then now() else auth_throttle.window_started_at end,
+      locked_until = ${lock}
+    returning failures
   `);
-  const [row] = rows;
-  return { failures: Number(row.failures), lockedUntil: row.locked_until ? new Date(row.locked_until) : null };
+  return Number(rows[0].failures);
 }
 
-export async function recordFailures(
-  keys: readonly ThrottleKey[],
-): Promise<{ failures: number; lockedUntil: Date | null }[]> {
-  return Promise.all(keys.map(recordFailure));
+/** Rows whose window and lock are both over carry no information; drop them. */
+async function purgeStale(): Promise<void> {
+  await getDb().execute(sql`
+    delete from auth_throttle
+    where (locked_until is null or locked_until <= now())
+      and (
+        (key like 'ip:%' and window_started_at <= now() - ${interval(THROTTLE_RULES.ip.windowMs)})
+        or (key = 'global' and window_started_at <= now() - ${interval(BRAKE.windowMs)})
+      )
+  `);
 }
 
-/** After a successful login the IP starts fresh; the global counter keeps running. */
-export async function clearFailures(keys: readonly ThrottleKey[]): Promise<void> {
+export interface RegisteredAttempt {
+  /** The IP is over its limit: reject without checking the password. */
+  blocked: boolean;
+  /** Attempts across all IPs in the global window, for the soft brake. */
+  globalFailures: number;
+}
+
+export async function registerAttempt(keys: readonly ThrottleKey[]): Promise<RegisteredAttempt> {
+  await purgeStale();
+  const counted = await Promise.all(keys.map(async (key) => ({ kind: key.kind, failures: await countAttempt(key) })));
+  const ip = counted.find((c) => c.kind === "ip");
+  const global = counted.find((c) => c.kind === "global");
+  return {
+    blocked: ip ? ip.failures > THROTTLE_RULES.ip.maxFailures : false,
+    globalFailures: global?.failures ?? 0,
+  };
+}
+
+/** A successful sign-in: the IP starts fresh and its attempt is taken off the global count. */
+export async function clearAttempt(keys: readonly ThrottleKey[]): Promise<void> {
+  const db = getDb();
   const ipKeys = keys.filter((k) => k.kind === "ip").map((k) => k.key);
-  if (ipKeys.length === 0) return;
-  await getDb().delete(authThrottle).where(inArray(authThrottle.key, ipKeys));
+  if (ipKeys.length > 0) await db.delete(authThrottle).where(inArray(authThrottle.key, ipKeys));
+  if (keys.some((k) => k.kind === "global")) {
+    await db.execute(sql`update auth_throttle set failures = greatest(failures - 1, 0) where key = 'global'`);
+  }
 }

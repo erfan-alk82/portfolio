@@ -11,8 +11,18 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypt
 const TOKEN_BYTES = 32;
 const B64URL = /^[A-Za-z0-9_-]+$/;
 
+export type KeyPurpose = "session-cookie" | "throttle-ip";
+
+/**
+ * One SESSION_SECRET, separate keys per use: a key that signs cookies is
+ * never also used to hash IPs, so neither use can help attack the other.
+ */
+export function deriveKey(secret: string, purpose: KeyPurpose): Buffer {
+  return createHmac("sha256", secret).update(`portfolio-admin:${purpose}`).digest();
+}
+
 function sign(token: string, secret: string): Buffer {
-  return createHmac("sha256", secret).update(token).digest();
+  return createHmac("sha256", deriveKey(secret, "session-cookie")).update(token).digest();
 }
 
 export function createSessionToken(secret: string): { token: string; cookieValue: string } {

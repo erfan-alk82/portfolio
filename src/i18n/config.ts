@@ -20,3 +20,6 @@ export function directionOf(locale: Locale): Direction {
   return locale === "fa" ? "rtl" : "ltr";
 }
 
+
+/** English names of the site's languages, for English-only UI such as the admin. */
+export const LANGUAGE_NAME_EN: Record<Locale, string> = { fa: "Persian", en: "English" };
