@@ -3,6 +3,8 @@
 # Production image for the portfolio: Next.js standalone server on Node 26 (Alpine).
 # Build:  docker build --build-arg SITE_URL=https://example.com -t erfan-portfolio .
 # Run:    docker run --rm -p 3000:3000 erfan-portfolio
+# The blog needs PostgreSQL at runtime (DATABASE_URL); the build does not.
+# Migrations run from the separate "migrate" target (see compose.yaml).
 
 ARG NODE_IMAGE=node:26.7.0-alpine3.23
 
@@ -11,6 +13,20 @@ FROM ${NODE_IMAGE} AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
+
+# ---- migrate: applies drizzle/ to DATABASE_URL, then exits ------------------------
+# A one-shot job, run before the web container starts. Only production dependencies
+# (postgres.js, drizzle-orm) are kept, and it runs as the unprivileged node user.
+FROM ${NODE_IMAGE} AS migrate
+WORKDIR /app
+ENV NODE_ENV=production
+COPY package.json package-lock.json ./
+COPY --from=deps /app/node_modules ./node_modules
+RUN npm prune --omit=dev --no-audit --no-fund
+COPY drizzle ./drizzle
+COPY scripts/migrate.mjs ./scripts/migrate.mjs
+USER node
+CMD ["node", "scripts/migrate.mjs"]
 
 # ---- build: compile the static pages and the standalone server --------------------
 FROM ${NODE_IMAGE} AS build
