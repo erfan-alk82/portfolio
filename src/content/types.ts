@@ -90,6 +90,8 @@ export interface CaseStudyFacts {
   slug: string;
   projectId: ProjectId;
   jobId: JobId;
+  /** Off: no page (real 404), no link from Projects, not in the sitemap. */
+  enabled: boolean;
 }
 
 export interface CaseStudySection {

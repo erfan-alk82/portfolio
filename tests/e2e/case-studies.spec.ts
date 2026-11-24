@@ -1,11 +1,15 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { allCaseStudies } from "../../src/content/profile";
 
 const LOCALES = ["fa", "en"] as const;
-const STUDIES = [
-  { slug: "geoinsight", fa: "GeoInsight", en: "GeoInsight" },
-  { slug: "factory-production", fa: "سامانه‌ی مدیریت تولید کارخانه", en: "Factory production management" },
-] as const;
+const TITLES = {
+  geoinsight: { fa: "GeoInsight", en: "GeoInsight" },
+  factory: { fa: "سامانه‌ی مدیریت تولید کارخانه", en: "Factory production management" },
+} as const;
+// Case studies can be switched off in src/content/profile.ts; only enabled ones are served.
+const STUDIES = allCaseStudies.filter((s) => s.enabled).map((s) => ({ slug: s.slug, ...TITLES[s.id] }));
+const DISABLED = allCaseStudies.filter((s) => !s.enabled);
 
 test.describe("hero map interaction", () => {
   test("every map label is a link to its role, announced with the role @desktop-only", async ({ page }) => {
@@ -80,13 +84,28 @@ for (const locale of LOCALES) {
   }
 }
 
-test("projects link to both case studies, and the sitemap lists them", async ({ page, request }) => {
+test("projects link to every enabled case study, and the sitemap lists them", async ({ page, request }) => {
   await page.goto("/fa");
-  await expect(page.getByTestId("case-study-link-geoinsight")).toHaveAttribute("href", "/fa/case-studies/geoinsight");
-  await expect(page.getByTestId("case-study-link-factory")).toHaveAttribute("href", "/fa/case-studies/factory-production");
+  for (const study of allCaseStudies.filter((s) => s.enabled)) {
+    await expect(page.getByTestId(`case-study-link-${study.id}`)).toHaveAttribute("href", `/fa/case-studies/${study.slug}`);
+  }
   const sitemap = await (await request.get("/sitemap.xml")).text();
   for (const locale of LOCALES) {
     for (const study of STUDIES) expect(sitemap).toContain(`/${locale}/case-studies/${study.slug}</loc>`);
+  }
+});
+
+test("disabled case studies have no links, return 404 and stay out of the sitemap", async ({ page, request }) => {
+  test.skip(DISABLED.length === 0, "every case study is enabled");
+  await page.goto("/en");
+  const sitemap = await (await request.get("/sitemap.xml")).text();
+  for (const study of DISABLED) {
+    await expect(page.getByTestId(`case-study-link-${study.id}`)).toHaveCount(0);
+    for (const locale of LOCALES) {
+      const response = await request.get(`/${locale}/case-studies/${study.slug}`);
+      expect(response.status(), `${locale}/${study.slug}`).toBe(404);
+      expect(sitemap).not.toContain(`/case-studies/${study.slug}`);
+    }
   }
 });
 

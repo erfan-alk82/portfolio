@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import {
+  allCaseStudies,
   caseStudies,
   getCopy,
   jobs,
@@ -23,8 +24,14 @@ import { Rich } from "@/components/ui/Rich";
 
 type Params = { locale: string; slug: string };
 
+/**
+ * Cache Components needs at least one param. While every case study is switched
+ * off, the known slugs are still listed: each prerenders straight to the 404 page
+ * (resolve() only accepts enabled studies), and the proxy answers them with 404.
+ */
 export function generateStaticParams(): { slug: string }[] {
-  return caseStudies.map((study) => ({ slug: study.slug }));
+  const listed = caseStudies.length > 0 ? caseStudies : allCaseStudies;
+  return listed.map((study) => ({ slug: study.slug }));
 }
 
 function resolve(

@@ -107,14 +107,22 @@ export const projects: readonly ProjectFacts[] = [
     period: { start: "2023-10", end: "2026-11" },
     stack: [],
   },
-  { id: "samin", name: "Samin", company: "Nadin Soft", stack: [] },
+  // Named per language in the copy: "Samin" / «سمین».
+  { id: "samin", company: "Nadin Soft", stack: ["Vue"] },
   { id: "csharp-framework", name: "Fundamental Structure for C#", company: "Nadin Soft", stack: ["C#"] },
 ];
 
-export const caseStudies: readonly CaseStudyFacts[] = [
-  { id: "geoinsight", slug: "geoinsight", projectId: "geoinsight", jobId: "sisootech" },
-  { id: "factory", slug: "factory-production", projectId: "factory", jobId: "dinamotor" },
+/**
+ * Every case study, written and translated. Switch one on or off with `enabled`;
+ * both are off at the owner's request (2026-11-23) until he wants them public.
+ */
+export const allCaseStudies: readonly CaseStudyFacts[] = [
+  { id: "geoinsight", slug: "geoinsight", projectId: "geoinsight", jobId: "sisootech", enabled: false },
+  { id: "factory", slug: "factory-production", projectId: "factory", jobId: "dinamotor", enabled: false },
 ];
+
+/** The published case studies: everything that links to or serves a case study reads this list. */
+export const caseStudies: readonly CaseStudyFacts[] = allCaseStudies.filter((study) => study.enabled);
 
 export const skillGroupOrder: readonly SkillGroupId[] = [
   "backend",
