@@ -48,3 +48,6 @@ next-env.d.ts
 /lighthouse-reports/
 !.env.example
 /.claude/
+
+.vercel
+.env*
