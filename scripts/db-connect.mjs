@@ -43,10 +43,25 @@ export function describeUrl(url) {
 }
 
 /** One connection; prepare: false keeps it compatible with Neon's pooled endpoint. */
+
 export function connect() {
   loadLocalEnv();
+
   const url = process.env.DATABASE_URL?.trim();
-  if (!url) throw new Error("DATABASE_URL is required, e.g. postgres://user:password@host:5432/db");
-  const sql = postgres(url, { max: 1, prepare: false, connect_timeout: 15, ssl: sslFor(url), onnotice: () => {} });
+
+  if (!url) {
+    throw new Error("DATABASE_URL is required");
+  }
+
+  const ssl = sslFor(url);
+
+  const sql = postgres(url, {
+    max: 1,
+    prepare: false,
+    connect_timeout: 15,
+    ssl: ssl === undefined && !LOCAL_HOSTS.has(new URL(url).hostname) ? "require" : ssl,
+    onnotice: () => {},
+  });
+
   return { sql, url };
 }
