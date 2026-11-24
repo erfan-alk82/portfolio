@@ -15,6 +15,24 @@ for (const locale of LOCALES) {
       expect(results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(" | ")}`)).toEqual([]);
     });
 
+    test("the header row keeps spare room at every width @desktop-only", async ({ page }) => {
+      // Fonts render slightly wider on some systems (CI is Linux), so demand a margin, not a bare fit.
+      const MIN_SLACK = 24;
+      for (const width of WIDTHS) {
+        await page.setViewportSize({ width, height: 900 });
+        await page.goto(`/${locale}`);
+        const slack = await page.evaluate(() => {
+          const row = document.querySelector("header > div") as HTMLElement;
+          const style = getComputedStyle(row);
+          const inner = row.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+          const items = [...row.children].filter((child) => getComputedStyle(child).display !== "none");
+          const used = items.reduce((sum, item) => sum + item.getBoundingClientRect().width, 0);
+          return inner - used - parseFloat(style.columnGap) * (items.length - 1);
+        });
+        expect(slack, `header slack at ${width}px`).toBeGreaterThanOrEqual(MIN_SLACK);
+      }
+    });
+
     test("never scrolls horizontally @desktop-only", async ({ page }) => {
       for (const width of WIDTHS) {
         await page.setViewportSize({ width, height: 900 });

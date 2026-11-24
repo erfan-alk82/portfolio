@@ -45,12 +45,12 @@
     --leading-body: 1.6;
     --leading-heading: 0.92;
     --display-width: 72;
-    /* Two rows (bar + scrollable nav) on small screens, one from md up. */
+    /* Two rows (bar + scrollable nav) below lg, one row from lg up. */
     --header-height: 6.85rem;
     color-scheme: light;
   }
 
-  @media (min-width: 48rem) {
+  @media (min-width: 64rem) {
     :root {
       --header-height: 4rem;
     }

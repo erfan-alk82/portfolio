@@ -61,7 +61,8 @@ export function SiteHeader({ locale, copy, path = "" }: SiteHeaderProps) {
         >
           {copy.hero.name}
         </a>
-        <nav aria-label={copy.nav.label} className="hidden md:block">
+        {/* One-row menu only from lg: below that six links do not fit beside the name and controls. */}
+        <nav aria-label={copy.nav.label} className="hidden lg:block">
           <ul className="flex items-center gap-6">{links}</ul>
         </nav>
         <div className="flex items-center gap-2">
@@ -76,7 +77,7 @@ export function SiteHeader({ locale, copy, path = "" }: SiteHeaderProps) {
       </div>
       <nav
         aria-label={copy.nav.label}
-        className="border-t border-rule/70 md:hidden"
+        className="border-t border-rule/70 lg:hidden"
       >
         <ul className="flex gap-5 overflow-x-auto px-5 sm:px-8 [scrollbar-width:none] [&_a:focus-visible]:outline-offset-[-3px]">
           {links}
