@@ -25,6 +25,21 @@ async function main() {
 }
 
 main().catch((error) => {
-  process.stderr.write(`Migration failed: ${error instanceof Error ? error.message : String(error)}\n`);
+  console.error("Migration failed:");
+
+  let current = error;
+
+  while (current) {
+    console.error({
+      message: current.message,
+      code: current.code,
+      detail: current.detail,
+      hint: current.hint,
+      severity: current.severity,
+    });
+
+    current = current.cause;
+  }
+
   process.exit(1);
 });
